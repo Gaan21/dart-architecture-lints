@@ -282,6 +282,8 @@ dart run custom_lint
 
 ## Development
 
+[![CI](https://github.com/Gaan21/dart-architecture-lints/actions/workflows/ci.yml/badge.svg)](https://github.com/Gaan21/dart-architecture-lints/actions/workflows/ci.yml)
+
 ```bash
 dart pub get
 dart analyze
