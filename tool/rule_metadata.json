@@ -1,0 +1,266 @@
+[
+  {
+    "id": "enforce_final_variables",
+    "section": "Core Language Rules",
+    "description": "Prefer `final` over `var` for immutable variables"
+  },
+  {
+    "id": "no_late_keyword",
+    "section": "Core Language Rules",
+    "description": "Avoid `late` keyword except for justified DI cases"
+  },
+  {
+    "id": "no_bang_operator",
+    "section": "Core Language Rules",
+    "description": "Discourage null assertion operator (`!`) usage"
+  },
+  {
+    "id": "method_order",
+    "section": "Code Organization Rules",
+    "description": "Enforce method order: @override → public → private"
+  },
+  {
+    "id": "variable_name_should_contain_class_name",
+    "section": "Code Organization Rules",
+    "description": "Prevent generic variable names for complex types"
+  },
+  {
+    "id": "one_class_per_file",
+    "section": "Code Organization Rules",
+    "description": "Promote one public class per file"
+  },
+  {
+    "id": "avoid_hardcoded_strings",
+    "section": "Flutter-Specific Rules",
+    "description": "Detect hardcoded UI strings, suggest i18n"
+  },
+  {
+    "id": "check_context_mounted",
+    "section": "Flutter-Specific Rules",
+    "description": "Verify BuildContext mounted check after async operations"
+  },
+  {
+    "id": "viewmodels_no_buildcontext",
+    "section": "Flutter-Specific Rules",
+    "description": "Prevent BuildContext usage in ViewModels"
+  },
+  {
+    "id": "usecases_follow_pattern",
+    "section": "Architecture & Patterns Rules",
+    "description": "Enforce UseCase pattern with execute() → Result<T>"
+  },
+  {
+    "id": "viewmodels_call_super_dispose",
+    "section": "Architecture & Patterns Rules",
+    "description": "Ensure ViewModels call super.dispose()"
+  },
+  {
+    "id": "no_external_dependencies_in_domain",
+    "section": "Architecture & Patterns Rules",
+    "description": "Keep domain layer dependency-free"
+  },
+  {
+    "id": "no_result_throw",
+    "section": "Architecture & Patterns Rules",
+    "description": "Prevent throw in UseCases/Repositories, enforce Result<T>"
+  },
+  {
+    "id": "viewmodels_no_flutter_types",
+    "section": "Architecture & Patterns Rules",
+    "description": "Prevent Flutter types in ViewModels (use UiState)"
+  },
+  {
+    "id": "screens_must_be_stateless",
+    "section": "Architecture & Patterns Rules",
+    "description": "Enforce StatelessWidget for Screen classes"
+  },
+  {
+    "id": "domain_entities_must_use_freezed",
+    "section": "Architecture & Patterns Rules",
+    "description": "Enforce @freezed on domain entities for immutability"
+  },
+  {
+    "id": "no_serialization_in_entities",
+    "section": "Architecture & Patterns Rules",
+    "description": "Prevent fromJson/toJson in domain entities"
+  },
+  {
+    "id": "models_must_have_json_serialization",
+    "section": "Architecture & Patterns Rules",
+    "description": "Ensure data models have JSON serialization"
+  },
+  {
+    "id": "usecases_extend_base_usecase",
+    "section": "Architecture & Patterns Rules",
+    "description": "Enforce UseCases extend BaseUseCase<T, P> for consistent error handling"
+  },
+  {
+    "id": "viewmodels_extend_base_viewmodel",
+    "section": "Architecture & Patterns Rules",
+    "description": "Enforce ViewModels extend BaseViewModel<T> or BaseViewModelWithEffects<T>"
+  },
+  {
+    "id": "repository_methods_return_result",
+    "section": "Architecture & Patterns Rules",
+    "description": "Enforce Repository methods return Future<Result<T>> or Result<T>"
+  },
+  {
+    "id": "streamcontroller_must_close",
+    "section": "Architecture & Patterns Rules",
+    "description": "Ensure StreamController fields are closed in dispose() to prevent memory leaks"
+  },
+  {
+    "id": "require_explicit_types",
+    "section": "Architecture & Patterns Rules",
+    "description": "Enforce explicit type annotations on all variables (no type inference)"
+  },
+  {
+    "id": "datasources_return_result",
+    "section": "Architecture & Patterns Rules",
+    "description": "Enforce DataSource methods return Future<Result<T>>, Result<T>, or Stream<Result<T>>"
+  },
+  {
+    "id": "no_business_logic_in_widgets",
+    "section": "Architecture & Patterns Rules",
+    "description": "Prevent business logic in Widgets (enforce MVVM separation)"
+  },
+  {
+    "id": "no_static_map_controllers",
+    "section": "State Management & Lifecycle Rules",
+    "description": "Prevent static Maps with Controllers/Timers (memory leaks)",
+    "status": "✅ Validated"
+  },
+  {
+    "id": "mixin_no_state_ownership",
+    "section": "State Management & Lifecycle Rules",
+    "description": "Prevent mixins from owning lifecycle resources",
+    "status": "✅ Validated"
+  },
+  {
+    "id": "uistate_must_call_super_dispose",
+    "section": "State Management & Lifecycle Rules",
+    "description": "Ensure UiState (ChangeNotifier) calls super.dispose()",
+    "status": "✅ Validated"
+  },
+  {
+    "id": "multiprovider_order",
+    "section": "State Management & Lifecycle Rules",
+    "description": "Enforce UiState before ViewModel in MultiProvider",
+    "status": "✅ Validated"
+  },
+  {
+    "id": "no_local_datetime_constructors",
+    "section": "Development & Testing Rules",
+    "description": "Discourage local DateTime constructors, suggest Clock injection"
+  },
+  {
+    "id": "no_direct_internet_calls",
+    "section": "Development & Testing Rules",
+    "description": "Prevent direct HTTP calls outside infrastructure layer"
+  },
+  {
+    "id": "enforce_utc_dates",
+    "section": "Development & Testing Rules",
+    "description": "Ensure DateTime operations use UTC"
+  },
+  {
+    "id": "require_keys_in_lists",
+    "section": "Development & Testing Rules",
+    "description": "Require keys in ListView and similar widgets"
+  },
+  {
+    "id": "logger_context_matches_scope",
+    "section": "Development & Testing Rules",
+    "description": "Ensure AppLoggerService.error/warning context matches enclosing scope (rename-safe)"
+  },
+  {
+    "id": "no_device_local_in_presentation",
+    "section": "Timezone Safety Rules",
+    "description": "Avoid device-local time (`toLocal()`) in the presentation layer; use an approved company-time helper"
+  },
+  {
+    "id": "no_civil_utc_mix_without_helper",
+    "section": "Timezone Safety Rules",
+    "description": "Detect civil-date and UTC-instant values mixed in one expression without an approved helper"
+  },
+  {
+    "id": "no_utc_time_format_without_empresa_helper",
+    "section": "Timezone Safety Rules",
+    "description": "Detect time formatting on a value not wrapped by an approved company-time helper, which renders UTC instead of company-local time"
+  },
+  {
+    "id": "avoid_unawaited",
+    "section": "Async & Concurrency Rules",
+    "description": "Require a categorised justification comment on every `unawaited(...)` call"
+  },
+  {
+    "id": "avoid_unawaited_ignore_without_reason",
+    "section": "Async & Concurrency Rules",
+    "description": "Require a stated reason when an unawaited-governance rule is suppressed"
+  },
+  {
+    "id": "avoid_async_in_provider_create",
+    "section": "Async & Concurrency Rules",
+    "description": "Forbid fire-and-forget async work inside `Provider.create`, which can mutate state before the widget tree is ready"
+  },
+  {
+    "id": "avoid_async_wrapper_hides_unawaited",
+    "section": "Async & Concurrency Rules",
+    "description": "Detect single-await async wrappers used to hide an unawaited future from the governance rule"
+  },
+  {
+    "id": "no_direct_error_logging_in_data_domain",
+    "section": "Logging & Error Governance",
+    "description": "Forbid direct error/warning logging in the data and domain layers, where reporting is already centralised"
+  },
+  {
+    "id": "logger_context_must_be_structured",
+    "section": "Logging & Error Governance",
+    "description": "Require a structured context on logger calls so log entries stay traceable and groupable"
+  },
+  {
+    "id": "no_sensitive_data_in_log_metadata",
+    "section": "Logging & Error Governance",
+    "description": "Forbid tokens, passwords, credentials and API keys in log metadata or log messages"
+  },
+  {
+    "id": "no_raw_exception_message_to_user",
+    "section": "Logging & Error Governance",
+    "description": "Forbid raw exception messages in UI components; user-facing text must come from stable i18n codes"
+  },
+  {
+    "id": "no_exception_message_passthrough",
+    "section": "Logging & Error Governance",
+    "description": "Detect raw exception strings being forwarded towards the UI instead of a stable error code"
+  },
+  {
+    "id": "app_exception_must_define_code",
+    "section": "Logging & Error Governance",
+    "description": "Require every `AppException` subtype to define a stable code so the presentation layer can localise it"
+  },
+  {
+    "id": "avoid_scattered_401_handling",
+    "section": "Architecture & Patterns Rules",
+    "description": "Keep 401 handling centralised in the auth interceptor instead of scattered across call sites"
+  },
+  {
+    "id": "top_level_screens_must_use_base_contract",
+    "section": "Architecture & Patterns Rules",
+    "description": "Require top-level routed screens to extend a base screen contract for consistent behaviour"
+  },
+  {
+    "id": "no_domain_entities_in_presentation_ui",
+    "section": "Architecture & Patterns Rules",
+    "description": "Forbid presentation UI from depending on domain entities directly; use presentation models"
+  },
+  {
+    "id": "no_hardcoded_color_literal",
+    "section": "Design Token Rules",
+    "description": "Forbid raw `Color(0x...)` literals in presentation; use a design token or the theme colour scheme"
+  },
+  {
+    "id": "no_hardcoded_border_radius",
+    "section": "Design Token Rules",
+    "description": "Forbid raw border-radius literals in presentation; use a spacing token"
+  }
+]

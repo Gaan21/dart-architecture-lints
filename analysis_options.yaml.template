@@ -1,0 +1,317 @@
+# Analysis Options Template for dart_architecture_lints
+#
+# This file provides recommended severity levels for all custom lint rules.
+# Copy this to your project's analysis_options.yaml and adjust as needed.
+#
+# Severity Levels:
+#   error   - Blocks CI/CD, must be fixed immediately
+#   warning - Should be fixed, but doesn't block CI/CD
+#   info    - Suggestions only, informational
+#
+# Last updated: 2025-10-08
+
+analyzer:
+  plugins:
+    - custom_lint
+
+  # Standard Dart/Flutter lints (optional, but recommended)
+  # Uncomment if you want to include official Flutter lints
+  # include: package:flutter_lints/flutter.yaml
+
+custom_lint:
+  # Enable analyzer plugin
+  enable_all_lint_rules: false
+
+  rules:
+    # ========================================
+    # 🔴 ERROR Level (18 rules)
+    # ========================================
+    # These rules catch critical bugs, memory leaks, or architectural violations
+    # that can cause crashes or severe quality issues in production.
+
+    ## Flutter Specific - Critical Runtime Errors
+    check_context_mounted: error
+    # Prevents crashes from using disposed BuildContext after async operations.
+    # Example: await someAsync(); if (!mounted) return; Navigator.pop(context);
+
+    require_keys_in_lists: error
+    # Prevents UI state bugs in dynamic lists (ListView, GridView).
+    # Flutter official recommendation for lists with mutable data.
+
+    ## Architecture & Patterns - Clean Architecture Enforcement
+    viewmodels_no_buildcontext: error
+    # ViewModels must be UI-agnostic. BuildContext couples to Flutter.
+    # Prevents memory leaks and enables pure Dart testing.
+
+    viewmodels_call_super_dispose: error
+    # ChangeNotifier contract: must call super.dispose() to prevent memory leaks.
+    # Critical for proper resource cleanup.
+
+    no_external_dependencies_in_domain: error
+    # Domain layer must be pure (no Flutter, HTTP, DB dependencies).
+    # Core Clean Architecture principle.
+
+    screens_must_be_stateless: error
+    # Screen widgets should use StatelessWidget + Provider for state.
+    # Enforces MVVM pattern and improves testability.
+
+    viewmodels_no_flutter_types: error
+    # ViewModels shouldn't use Flutter types (TextEditingController, etc.).
+    # Use UiState for Flutter types. Keeps ViewModels testable without flutter_test.
+
+    no_result_throw: error
+    # UseCases/Repositories must return Result<T>, not throw exceptions.
+    # Type-safe error handling (backed by Flutter official docs Oct 2025).
+
+    ## State Management & Lifecycle - Memory Leak Prevention
+    no_static_map_controllers: error
+    # Static Maps with Controllers/Timers cause memory leaks.
+    # Resources never disposed, grow indefinitely.
+
+    mixin_no_state_ownership: error
+    # Mixins should provide behavior, not own stateful resources.
+    # Prevents unclear ownership and memory leaks.
+
+    uistate_must_call_super_dispose: error
+    # UiState (ChangeNotifier) must call super.dispose() to prevent memory leaks.
+    # Critical for cleaning up listeners and timers.
+
+    ## Domain/Data Layer - Clean Architecture (Phase 1A)
+    domain_entities_must_use_freezed: error
+    # Domain entities must use @freezed for guaranteed immutability and pattern matching.
+    # Prevents mutable entities that can cause bugs.
+
+    no_serialization_in_entities: error
+    # Domain entities must NOT have fromJson/toJson. Serialization belongs in data layer.
+    # Enforces strict Domain/Data separation (Clean Architecture).
+
+    ## Obligatory Patterns - Error Handling (Phase 1B)
+    usecases_extend_base_usecase: error
+    # UseCases must extend BaseUseCase<T, P> for centralized error handling.
+    # Ensures consistent Result<T> conversion and try-catch logic.
+
+    viewmodels_extend_base_viewmodel: error
+    # ViewModels must extend BaseViewModel<T>/BaseViewModelWithEffects<T> to guarantee typed state and lifecycle hooks.
+
+    repository_methods_return_result: error
+    # Repository methods must return Result<T> (or Future<Result<T>>) to propagate domain-safe errors.
+
+    streamcontroller_must_close: error
+    # StreamController instances must be closed to prevent memory leaks and dangling subscriptions.
+
+    require_explicit_types: error
+    # Forces explicit type annotations to avoid unintended dynamic inference in critical layers.
+
+    ## Logging Governance - Observability Discipline
+    no_direct_error_logging_in_data_domain: error
+    # Data/domain layers must not call AppLoggerService.error/warning directly.
+    # Errors centralized in Guard/ErrorReporter. Prevents double-logging noise.
+
+    no_sensitive_data_in_log_metadata: error
+    # Prohibits tokens, passwords, API keys in log metadata/messages.
+    # OWASP A09 / GDPR compliance. Logs persist in plaintext in observability systems.
+
+    no_lint_ignores_without_approval_tag: error
+    # Every // ignore: or // ignore_for_file: must have approved-by-user: tag.
+    # Prevents untracked lint discipline erosion.
+
+    # ========================================
+    # ⚠️ WARNING Level (13 rules)
+    # ========================================
+    # These rules catch bad practices that should be fixed but don't
+    # immediately break the application.
+
+    ## Core Language - Code Quality
+    enforce_final_variables: warning
+    # Prefer 'final' over 'var' for immutability.
+    # Reduces bugs from accidental reassignment.
+
+    no_late_keyword: warning
+    # Avoid 'late' keyword except for justified DI cases.
+    # Can cause runtime null errors if not careful.
+
+    no_bang_operator: warning
+    # Discourage null assertion operator (!).
+    # Prefer pattern matching or explicit null checks.
+
+    ## Architecture - Consistency
+    usecases_follow_pattern: warning
+    # UseCases should have execute() method returning Result<T>.
+    # Project convention for consistency.
+
+    ## Development & Testing - Best Practices
+    no_direct_internet_calls: warning
+    # HTTP calls should go through DataSource layer, not directly in UseCases.
+    # Improves testability and offline-first architecture.
+
+    enforce_utc_dates: warning
+    # Use UTC for all internal date storage/calculations.
+    # Prevents timezone bugs in persistence layer.
+
+    no_local_datetime_constructors: warning
+    # Inject Clock instead of DateTime.now() for testability.
+    # Allows time-traveling in tests.
+
+    ## Flutter Specific - Quality
+    avoid_hardcoded_strings: warning
+    # UI strings should use i18n (AppLocalizations).
+    # Detects hardcoded strings in Text, Dialog, SnackBar.
+
+    multiprovider_order: warning
+    # UiState providers should be declared before ViewModel providers in MultiProvider.
+    # Ensures dependencies are available when ViewModels initialize.
+
+    models_must_have_json_serialization: warning
+    # Data models should have fromJson/toJson or use @JsonSerializable/@freezed.
+    # Ensures models can interact with APIs. Complements no_serialization_in_entities.
+
+    datasources_return_result: warning
+    # DataSource methods should return Result<T>/Future<Result<T>> to keep the Result pipeline consistent.
+
+    no_business_logic_in_widgets: warning
+    # UI widgets must delegate business logic to ViewModels to preserve MVVM separation.
+
+    ## Exception Message Governance - i18n Safety
+    no_raw_exception_message_to_user: warning
+    # Prevents raw exception messages (error.message, exception.toString()) from reaching
+    # UI notification widgets (Text, SnackBar, showError). Use stable i18n codes instead.
+
+    no_exception_message_passthrough: warning
+    # Detects passthrough patterns that forward raw exception messages toward the UI:
+    # error.code ?? error.message, details: error.message, reason: exception.toString().
+
+    app_exception_must_define_code: warning
+    # AppException subclasses must define a stable 'code' field for i18n lookup.
+    # Without a code, the presentation layer cannot localize the error message.
+
+    ## Screen Architecture - Base Contract Enforcement
+    top_level_screens_must_use_base_contract: warning
+    # Screen classes in presentation/screens/ must extend a Base*Screen contract
+    # from screens/base/ to share lifecycle hooks, analytics and theming.
+    # Only active when the project has base contracts defined in screens/base/.
+
+    no_domain_entities_in_presentation_ui: warning
+    # Forbids presentation/screens and presentation/widgets from importing
+    # domain/entities directly. Use presentation/models/*_ui_model.dart and
+    # keep translation in explicit *_ui_mapper.dart files.
+
+    logger_context_must_be_structured: warning
+    # Logging calls must include structured context (Class.method / module.action).
+    # Consistent context enables filtering and grouping in observability dashboards.
+
+    logger_context_matches_scope: warning
+    # Enforces context to match enclosing symbol scope in work_tracker/lib/**.
+    # Protects log traceability against method/class renames.
+
+    # ========================================
+    # ℹ️ INFO Level (3 rules)
+    # ========================================
+    # These are style conventions and suggestions. They don't affect
+    # functionality but can improve code organization.
+
+    ## Code Organization - Style Conventions
+    method_order: info
+    # Suggests method order: @override → public → private.
+    # Convention for consistency, not functional requirement.
+
+    variable_name_should_contain_class_name: info
+    # Suggests coherent variable naming (e.g., UserModel user).
+    # Helps avoid generic names but has many valid exceptions.
+
+    one_class_per_file: info
+    # Suggests one public class per file.
+    # Has valid exceptions (sealed classes, private helpers).
+
+    # ========================================
+    # 🚫 DISABLED Rules
+    # ========================================
+    # These rules are implemented but disabled for specific reasons.
+
+    # ensure_barrel_file_imports: info
+    # DISABLED by default. Enable per project once barrel structure is established.
+    # Now excludes: screens/base/ files, barrel self-imports, and cycle detection.
+
+    # prefer_const_constructors: warning
+    # DISABLED: Flutter already provides an official lint; prefer enabling upstream rule per project.
+
+    # no_print_statements: error
+    # DISABLED: Project teams prefer handling logging policies per app configuration.
+
+    # require_context_in_searchable: warning
+    # DISABLED: Replaced by improved guideline + IDE snippets.
+    # See the project architecture guidelines for decision rationale.
+
+# ========================================
+# CI/CD Configuration Examples
+# ========================================
+
+# Option 1: Fail only on errors (recommended for most projects)
+# $ dart run custom_lint
+
+# Option 2: Fail on errors AND warnings (strict mode)
+# $ dart run custom_lint --fatal-warnings
+
+# Option 3: Fail on everything including info
+# $ dart run custom_lint --fatal-infos
+
+# ========================================
+# Gradual Activation Strategy
+# ========================================
+#
+# For existing projects with many violations:
+#
+# Phase 1 (Week 1-2): All rules as 'warning'
+# - Team reviews violations without blocking development
+# - Create technical debt tickets
+#
+# Phase 2 (Week 3-4): Fix violations incrementally
+# - Focus on error-level violations first
+# - Use // ignore comments sparingly with justification
+#
+# Phase 3 (Week 5+): Upgrade to error level
+# - Rules that were warnings become errors
+# - Blocks new violations in CI/CD
+#
+# Example for Phase 1:
+# custom_lint:
+#   rules:
+#     no_static_map_controllers: warning  # Will be error in Phase 3
+#     screens_must_be_stateless: warning  # Will be error in Phase 3
+
+# ========================================
+# Project-Specific Customization
+# ========================================
+#
+# You can adjust severity levels based on your project needs:
+#
+# Example: Stricter null safety
+# no_late_keyword: error
+# no_bang_operator: error
+#
+# Example: Relaxed architecture rules for prototyping
+# screens_must_be_stateless: warning
+# usecases_follow_pattern: info
+#
+# Example: Disable rules that don't fit your architecture
+# enforce_barrel_file_imports: false
+
+# ========================================
+# Ignoring Specific Files/Directories
+# ========================================
+#
+# analyzer:
+#   exclude:
+#     - lib/generated/**      # Generated files
+#     - lib/**.g.dart         # build_runner generated
+#     - lib/**.freezed.dart   # Freezed generated
+#     - test/fixtures/**      # Test fixtures
+#     - lib/legacy/**         # Legacy code being migrated
+
+# ========================================
+# Additional Resources
+# ========================================
+#
+# - Full rule documentation: docs/rules/
+#
+# For questions or issues:
+# https://github.com/Gaan21/dart_architecture_lints/issues

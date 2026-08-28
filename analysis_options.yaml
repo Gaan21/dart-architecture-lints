@@ -1,0 +1,11 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  errors:
+    # Authoring custom_lint rules requires the analyzer's element APIs, which the
+    # analyzer team marks experimental. The warning is expected here and would
+    # otherwise be the only output of every analysis run, hiding real findings.
+    experimental_member_use: ignore
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options

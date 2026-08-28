@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Resolve dependencies
+        run: dart pub get
+
+      - name: Analyze
+        run: dart analyze
+
+      - name: Test
+        run: dart test
+
+      # The rule catalogue in the README is generated from the plugin's own
+      # getLintRules list. If a rule was added or removed without regenerating,
+      # the working tree changes here and the job fails.
+      - name: Check the rule catalogue is up to date
+        run: |
+          dart run tool/generate_rule_tables.dart
+          git diff --exit-code README.md
