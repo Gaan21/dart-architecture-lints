@@ -262,5 +262,10 @@
     "id": "no_hardcoded_border_radius",
     "section": "Design Token Rules",
     "description": "Forbid raw border-radius literals in presentation; use a spacing token"
+  },
+  {
+    "id": "overlay_lifecycle_context_safety",
+    "section": "State Management & Lifecycle Rules",
+    "description": "Forbid dialog and sheet builders from capturing a caller-owned controller or using the caller's BuildContext for inherited lookups"
   }
 ]
