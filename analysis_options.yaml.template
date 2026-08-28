@@ -8,7 +8,7 @@
 #   warning - Should be fixed, but doesn't block CI/CD
 #   info    - Suggestions only, informational
 #
-# Last updated: 2025-10-08
+# Last updated: 2026-08-27
 
 analyzer:
   plugins:
@@ -30,10 +30,6 @@ custom_lint:
     # that can cause crashes or severe quality issues in production.
 
     ## Flutter Specific - Critical Runtime Errors
-    check_context_mounted: error
-    # Prevents crashes from using disposed BuildContext after async operations.
-    # Example: await someAsync(); if (!mounted) return; Navigator.pop(context);
-
     require_keys_in_lists: error
     # Prevents UI state bugs in dynamic lists (ListView, GridView).
     # Flutter official recommendation for lists with mutable data.
@@ -50,10 +46,6 @@ custom_lint:
     no_external_dependencies_in_domain: error
     # Domain layer must be pure (no Flutter, HTTP, DB dependencies).
     # Core Clean Architecture principle.
-
-    screens_must_be_stateless: error
-    # Screen widgets should use StatelessWidget + Provider for state.
-    # Enforces MVVM pattern and improves testability.
 
     viewmodels_no_flutter_types: error
     # ViewModels shouldn't use Flutter types (TextEditingController, etc.).
@@ -111,12 +103,8 @@ custom_lint:
     # Prohibits tokens, passwords, API keys in log metadata/messages.
     # OWASP A09 / GDPR compliance. Logs persist in plaintext in observability systems.
 
-    no_lint_ignores_without_approval_tag: error
-    # Every // ignore: or // ignore_for_file: must have approved-by-user: tag.
-    # Prevents untracked lint discipline erosion.
-
     # ========================================
-    # ⚠️ WARNING Level (13 rules)
+    # ⚠️ WARNING Level (29 rules)
     # ========================================
     # These rules catch bad practices that should be fixed but don't
     # immediately break the application.
@@ -203,8 +191,42 @@ custom_lint:
     # Enforces context to match enclosing symbol scope in work_tracker/lib/**.
     # Protects log traceability against method/class renames.
 
+    ## Timezone Safety
+    no_device_local_in_presentation: warning
+    # Prevents device-local time from leaking into presentation code.
+
+    no_civil_utc_mix_without_helper: warning
+    # Detects civil dates and UTC instants mixed without an approved helper.
+
+    no_utc_time_format_without_empresa_helper: warning
+    # Requires approved company-time conversion before formatting time values.
+
+    ## Async & Concurrency
+    avoid_unawaited: warning
+    # Requires a categorized justification for fire-and-forget futures.
+
+    avoid_unawaited_ignore_without_reason: warning
+    # Requires a reason when unawaited governance is suppressed.
+
+    avoid_async_in_provider_create: warning
+    # Prevents fire-and-forget async work during Provider creation.
+
+    avoid_async_wrapper_hides_unawaited: warning
+    # Detects async wrappers used to hide unawaited futures.
+
+    ## Authentication Boundaries
+    avoid_scattered_401_handling: warning
+    # Keeps unauthorized-response handling in the designated auth boundary.
+
+    ## Design Tokens
+    no_hardcoded_color_literal: warning
+    # Requires presentation colors to use theme or design tokens.
+
+    no_hardcoded_border_radius: warning
+    # Requires known border-radius values to use spacing tokens.
+
     # ========================================
-    # ℹ️ INFO Level (3 rules)
+    # ℹ️ INFO Level (4 rules)
     # ========================================
     # These are style conventions and suggestions. They don't affect
     # functionality but can improve code organization.
@@ -222,24 +244,8 @@ custom_lint:
     # Suggests one public class per file.
     # Has valid exceptions (sealed classes, private helpers).
 
-    # ========================================
-    # 🚫 DISABLED Rules
-    # ========================================
-    # These rules are implemented but disabled for specific reasons.
-
-    # ensure_barrel_file_imports: info
-    # DISABLED by default. Enable per project once barrel structure is established.
-    # Now excludes: screens/base/ files, barrel self-imports, and cycle detection.
-
-    # prefer_const_constructors: warning
-    # DISABLED: Flutter already provides an official lint; prefer enabling upstream rule per project.
-
-    # no_print_statements: error
-    # DISABLED: Project teams prefer handling logging policies per app configuration.
-
-    # require_context_in_searchable: warning
-    # DISABLED: Replaced by improved guideline + IDE snippets.
-    # See the project architecture guidelines for decision rationale.
+    overlay_lifecycle_context_safety: info
+    # Detects unsafe controller and BuildContext capture across overlay lifecycles.
 
 # ========================================
 # CI/CD Configuration Examples
@@ -276,7 +282,7 @@ custom_lint:
 # custom_lint:
 #   rules:
 #     no_static_map_controllers: warning  # Will be error in Phase 3
-#     screens_must_be_stateless: warning  # Will be error in Phase 3
+#     viewmodels_no_flutter_types: warning  # Will be error in Phase 3
 
 # ========================================
 # Project-Specific Customization
@@ -289,11 +295,11 @@ custom_lint:
 # no_bang_operator: error
 #
 # Example: Relaxed architecture rules for prototyping
-# screens_must_be_stateless: warning
+# viewmodels_no_flutter_types: warning
 # usecases_follow_pattern: info
 #
 # Example: Disable rules that don't fit your architecture
-# enforce_barrel_file_imports: false
+# domain_entities_must_use_freezed: false
 
 # ========================================
 # Ignoring Specific Files/Directories
