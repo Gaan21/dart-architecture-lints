@@ -1,3 +1,7 @@
+<!-- example-scope: isolated avoid_async_wrapper_hides_unawaited -->
+
+> **Example contract: `avoid_async_wrapper_hides_unawaited` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # avoid_async_wrapper_hides_unawaited
 
 **Rule name**: `avoid_async_wrapper_hides_unawaited`

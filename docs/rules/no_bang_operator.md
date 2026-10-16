@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_bang_operator -->
+
+> **Example contract: `no_bang_operator` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # `no_bang_operator`
 
 Prevents use of the null assertion operator `!` anywhere in the codebase.

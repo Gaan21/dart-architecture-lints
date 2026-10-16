@@ -8,14 +8,10 @@ import 'package:dart_architecture_lints/timezone_safety_utils.dart';
 /// Detects `DateFormat(...).format(value)` calls for time patterns inside
 /// presentation/UI files where the argument has not been converted through an
 /// approved empresa time helper such as `toEmpresaLocalTime`.
-///
-/// ### Algorithm (two phases)
-///
 /// **Phase 1 — file-level pre-scan** (`addCompilationUnit`):
 /// Collects every variable name whose *initializer* is a time-pattern DateFormat
 /// (e.g. `final f = DateFormat('HH:mm')`).  This set is used in Phase 2 to
 /// recognise formatter variables with generic names (`f`, `fmt`, etc.).
-///
 /// **Phase 2 — per-invocation check** (`addMethodInvocation`):
 /// For each `.format(arg)` call whose receiver is a time-format DateFormat:
 ///   1. Accept if `arg` is a direct approved-wrapper call (e.g. `toEmpresaLocalTime(...)`).
@@ -25,9 +21,6 @@ import 'package:dart_architecture_lints/timezone_safety_utils.dart';
 ///   3. Accept (opt-in) if `allow_utc_debug_context` is enabled and the call is
 ///      inside a `'... UTC'` string interpolation.
 ///   4. Report otherwise.
-///
-/// ### Pre-converted scope resolution
-///
 /// Given `f.format(local)`, the resolver scans upward through `Block` nodes
 /// looking for the last statement that declares or assigns `local` *before* the
 /// format call within that block.  It returns:

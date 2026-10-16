@@ -1,3 +1,7 @@
+<!-- example-scope: isolated avoid_scattered_401_handling -->
+
+> **Example contract: `avoid_scattered_401_handling` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # `avoid_scattered_401_handling`
 
 Prevents 401 / unauthorized status-code checks outside of the designated

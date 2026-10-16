@@ -1,11 +1,11 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that enforces the use of 'final' over 'var' for immutable variables.
-/// Follows the guideline: "No usar 'var' (salvo casos locales inmutables muy evidentes)"
 class EnforceFinalVariablesLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [EnforceFinalVariablesLint].
   const EnforceFinalVariablesLint() : super(code: _code);
@@ -13,14 +13,9 @@ class EnforceFinalVariablesLint extends GeneratedSkippingDartLintRule {
   /// The lint code associated with this rule.
   static const _code = LintCode(
     name: 'enforce_final_variables',
-    problemMessage:
-        'Variable declarada con "var" debería usar "final" para valores inmutables. Esto previene mutaciones accidentales y mejora la legibilidad del código.',
+    problemMessage: 'This local variable is never reassigned.',
     correctionMessage:
-        'Usa "final" en lugar de "var" para variables que no se reasignan.\n'
-        'Excepciones válidas: for loops, variables temporales que SÍ se reasignan múltiples veces.\n'
-        'Ejemplo:\n'
-        '  // ❌ var name = "John";\n'
-        '  // ✅ final name = "John";',
+        'Use final for a local binding that is never reassigned.',
   );
 
   /// Executes the lint rule to detect inappropriate uses of 'var'.
@@ -33,12 +28,11 @@ class EnforceFinalVariablesLint extends GeneratedSkippingDartLintRule {
     context.registry.addVariableDeclarationList((VariableDeclarationList node) {
       // Only check 'var' declarations
       if (node.keyword?.type == Keyword.VAR) {
+        // Fields and top-level bindings may be written from other libraries.
+        if (node.parent is! VariableDeclarationStatement) return;
         // Check if this is an acceptable context for 'var'
         if (!_isAcceptableVarContext(node)) {
-          reporter.atToken(
-            node.keyword!,
-            _code,
-          );
+          reporter.atToken(node.keyword!, _code);
         }
       }
     });
@@ -63,17 +57,33 @@ class EnforceFinalVariablesLint extends GeneratedSkippingDartLintRule {
     }
 
     // Check if we're in an enhanced for loop (for-in)
-    final forEachStatement =
-        node.thisOrAncestorOfType<ForEachPartsWithDeclaration>();
+    final forEachStatement = node
+        .thisOrAncestorOfType<ForEachPartsWithDeclaration>();
     if (forEachStatement != null &&
         forEachStatement.loopVariable.parent == node) {
       return true; // Allow var in for-in loops
     }
 
-    // Check if variable is clearly being reassigned locally
-    // This would require more complex analysis to detect reassignment patterns
-    // For now, we'll be strict and suggest final unless in loops
+    final scope = node.thisOrAncestorOfType<FunctionBody>();
+    if (scope == null) return true;
+    return node.variables.every((variable) {
+      final visitor = _Writes(variable.declaredFragment?.element);
+      scope.accept(visitor);
+      return visitor.found;
+    });
+  }
+}
 
-    return false;
+class _Writes extends RecursiveAstVisitor<void> {
+  _Writes(this.element);
+  final Object? element;
+  bool found = false;
+
+  @override
+  void visitSimpleIdentifier(SimpleIdentifier node) {
+    if (element != null && node.element == element && node.inSetterContext()) {
+      found = true;
+    }
+    super.visitSimpleIdentifier(node);
   }
 }

@@ -2,12 +2,21 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+import 'time_scope.dart';
+import 'timezone_safety_utils.dart';
 
 /// A lint rule that discourages direct use of DateTime constructors that create local time.
 /// Enforces UTC-first approach and dependency injection for testability.
 class NoDateTimeNowLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoDateTimeNowLint].
-  const NoDateTimeNowLint() : super(code: _code);
+  const NoDateTimeNowLint({this.scope = const TimeScope()})
+    : super(code: _code);
+  final TimeScope scope;
+
+  static NoDateTimeNowLint fromConfigs(CustomLintConfigs configs) =>
+      NoDateTimeNowLint(
+        scope: TimeScope.fromJson(readRuleOptions(configs, _code.name)),
+      );
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
@@ -24,21 +33,29 @@ class NoDateTimeNowLint extends GeneratedSkippingDartLintRule {
     DiagnosticReporter reporter,
     CustomLintContext context,
   ) {
+    if (!scope.includes(resolver.path)) return;
     // Check InstanceCreationExpression for problematic DateTime constructors
-    context.registry
-        .addInstanceCreationExpression((InstanceCreationExpression node) {
+    context.registry.addInstanceCreationExpression((
+      InstanceCreationExpression node,
+    ) {
+      final name = node.constructorName.name?.name;
+      if (name == 'now' && scope.clock(resolver.path)) return;
+      if (name == null && scope.civil(resolver.path)) return;
       _checkDateTimeConstructor(node, reporter);
     });
 
     // Check MethodInvocation for DateTime.parse() and DateTime.now()
     context.registry.addMethodInvocation((MethodInvocation node) {
+      if (node.methodName.name == 'now' && scope.clock(resolver.path)) return;
       _checkDateTimeMethod(node, reporter);
     });
   }
 
   /// Checks DateTime constructors for local time creation.
   void _checkDateTimeConstructor(
-      InstanceCreationExpression node, DiagnosticReporter reporter) {
+    InstanceCreationExpression node,
+    DiagnosticReporter reporter,
+  ) {
     if (!_isDateTimeConstructor(node)) return;
 
     final constructorName = node.constructorName.name?.name;
@@ -73,9 +90,15 @@ class NoDateTimeNowLint extends GeneratedSkippingDartLintRule {
   }
 
   /// Checks DateTime static methods for local time creation.
-  void _checkDateTimeMethod(MethodInvocation node, DiagnosticReporter reporter) {
-    final target = node.target;
-    if (target is! Identifier || target.name != 'DateTime') return;
+  void _checkDateTimeMethod(
+    MethodInvocation node,
+    DiagnosticReporter reporter,
+  ) {
+    final element = node.methodName.element;
+    if (element?.enclosingElement?.name != 'DateTime' ||
+        element?.library?.uri.toString() != 'dart:core') {
+      return;
+    }
 
     final methodName = node.methodName.name;
 
@@ -93,8 +116,9 @@ class NoDateTimeNowLint extends GeneratedSkippingDartLintRule {
 
   /// Checks if instance creation is DateTime constructor.
   bool _isDateTimeConstructor(InstanceCreationExpression node) {
-    final type = node.constructorName.type;
-    return type.name.lexeme == 'DateTime';
+    final element = node.constructorName.type.type?.element;
+    return element?.name == 'DateTime' &&
+        element?.library?.uri.toString() == 'dart:core';
   }
 
   /// Checks if DateTime.fromMillisecondsSinceEpoch has isUtc: true.
@@ -121,22 +145,17 @@ class NoDateTimeNowLint extends GeneratedSkippingDartLintRule {
       final firstArg = arguments.first;
       if (firstArg is StringLiteral) {
         final value = firstArg.stringValue;
-        if (value != null && value.endsWith('Z')) {
+        if (value != null &&
+            RegExp(r'[Tt ].*(?:[zZ]|[+-]\d{2}(?::?\d{2})?)$').hasMatch(value)) {
           return true;
         }
       }
     }
 
     // Check if followed by .toUtc()
-    AstNode? parent = node.parent;
-    while (parent != null) {
-      if (parent is MethodInvocation && parent.methodName.name == 'toUtc') {
-        return true;
-      }
-      if (parent is! PropertyAccess && parent is! MethodInvocation) break;
-      parent = parent.parent;
-    }
-
-    return false;
+    final parent = node.parent;
+    return parent is MethodInvocation &&
+        identical(parent.target, node) &&
+        parent.methodName.name == 'toUtc';
   }
 }

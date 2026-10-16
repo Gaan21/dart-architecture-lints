@@ -1,4 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/element/type.dart';
+import 'resource_types.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
@@ -42,47 +44,15 @@ class NoStaticMapControllersLint extends GeneratedSkippingDartLintRule {
       if (!node.isStatic) return;
 
       // Check if the field type is a Map containing lifecycle resources
-      final type = node.fields.type;
-      if (type == null) return;
-
-      if (_isMapWithLifecycleResources(type)) {
+      if (node.fields.variables.any((variable) {
+        final type = variable.declaredFragment?.element.type;
+        return type is InterfaceType &&
+            type.isDartCoreMap &&
+            type.typeArguments.length == 2 &&
+            isResourceType(type.typeArguments[1], lifecycleResourceNames);
+      })) {
         reporter.atNode(node, _code);
       }
     });
-  }
-
-  /// Checks if the type is a Map containing lifecycle resources.
-  bool _isMapWithLifecycleResources(TypeAnnotation type) {
-    if (type is! NamedType) return false;
-
-    final typeName = type.name.lexeme;
-
-    // Check if it's a Map type
-    if (typeName != 'Map') return false;
-
-    // Check type arguments (Map<K, V>)
-    final typeArgs = type.typeArguments;
-    if (typeArgs == null || typeArgs.arguments.length < 2) return false;
-
-    // Check the value type (second type argument)
-    final valueType = typeArgs.arguments[1];
-    if (valueType is! NamedType) return false;
-
-    final valueTypeName = valueType.name.lexeme;
-
-    // List of types that represent lifecycle resources
-    const lifecycleResources = {
-      'TextEditingController',
-      'ScrollController',
-      'AnimationController',
-      'TabController',
-      'PageController',
-      'FocusNode',
-      'Timer',
-      'StreamController',
-      'StreamSubscription',
-    };
-
-    return lifecycleResources.contains(valueTypeName);
   }
 }

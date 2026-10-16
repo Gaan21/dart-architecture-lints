@@ -2,32 +2,38 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+import 'package:analyzer/dart/element/type.dart';
+import 'timezone_safety_utils.dart';
 
-/// A lint rule that enforces explicit type annotations on all variables.
-/// Prohibits type inference to improve code readability and maintainability.
+/// Explicit annotations under a strict legacy or selective boundary policy.
 class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [RequireExplicitTypes].
-  const RequireExplicitTypes() : super(code: _code);
+  const RequireExplicitTypes({
+    this.policy = 'strict',
+    this.localNames = const [],
+  }) : super(code: _code);
+
+  final String policy;
+  final List<String> localNames;
+
+  static RequireExplicitTypes fromConfigs(CustomLintConfigs configs) {
+    final options = readRuleOptions(configs, _code.name);
+    final policy = options['policy'] ?? 'strict';
+    if (policy != 'strict' && policy != 'selective') {
+      throw ArgumentError.value(policy, 'policy', 'Use strict or selective');
+    }
+    return RequireExplicitTypes(
+      policy: policy as String,
+      localNames: readStringListOption(options, 'local_names'),
+    );
+  }
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    correctionMessage:
-        'Añade type annotation explícita a la variable.\n'
-        'Ejemplos:\n'
-        '  // Fields\n'
-        '  final StreamController<String> _controller = StreamController<String>();\n'
-        '  final int _count = 0;\n'
-        '  \n'
-        '  // Variables locales\n'
-        '  final Result<User> result = await _useCase.execute();\n'
-        '  final String name = user.name;\n'
-        '  \n'
-        '  // Loop variables\n'
-        '  for (int i = 0; i < 10; i++) { }\n'
-        '  for (final User user in users) { }',
+    correctionMessage: 'Add a type annotation at this selected boundary.',
     name: 'require_explicit_types',
     problemMessage:
-        'Las variables deben tener type annotation explícita. Usa "final Type name = value;" en lugar de type inference.',
+        'An explicit type is required by the configured typing policy.',
   );
 
   /// Executes the lint rule to detect variables without explicit type annotations.
@@ -37,17 +43,47 @@ class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
     DiagnosticReporter reporter,
     CustomLintContext context,
   ) {
+    if (policy == 'selective') {
+      context.registry.addMethodDeclaration((node) {
+        if (_public(node.name.lexeme, node) &&
+            node.returnType == null &&
+            !node.isSetter) {
+          reporter.atToken(node.name, _code);
+        }
+      });
+      context.registry.addFunctionDeclaration((node) {
+        if (node.parent is CompilationUnit &&
+            _public(node.name.lexeme, node) &&
+            node.returnType == null &&
+            !node.isSetter) {
+          reporter.atToken(node.name, _code);
+        }
+      });
+      context.registry.addSimpleFormalParameter((node) {
+        if (_publicSignature(node) && node.type == null) {
+          reporter.atNode(node, _code);
+        }
+      });
+      context.registry.addTopLevelVariableDeclaration((node) {
+        if (node.variables.type != null) return;
+        for (final variable in node.variables.variables) {
+          if (_public(variable.name.lexeme, variable)) {
+            reporter.atNode(variable, _code);
+          }
+        }
+      });
+    }
     // Detectar fields de clase sin type annotation
     context.registry.addFieldDeclaration((FieldDeclaration node) {
       _checkFieldDeclaration(node, reporter);
     });
 
     // Detectar variables locales sin type annotation
-    context.registry.addVariableDeclarationStatement(
-      (VariableDeclarationStatement node) {
-        _checkVariableDeclarationStatement(node, reporter);
-      },
-    );
+    context.registry.addVariableDeclarationStatement((
+      VariableDeclarationStatement node,
+    ) {
+      _checkVariableDeclarationStatement(node, reporter);
+    });
 
     // Detectar loop variables sin type annotation
     context.registry.addForStatement((ForStatement node) {
@@ -57,6 +93,30 @@ class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
     context.registry.addForElement((ForElement node) {
       _checkForElement(node, reporter);
     });
+  }
+
+  bool _public(String name, AstNode node) {
+    if (name.startsWith('_')) return false;
+    final owner = node.thisOrAncestorOfType<ClassDeclaration>();
+    return owner == null || !owner.name.lexeme.startsWith('_');
+  }
+
+  bool _publicSignature(AstNode node) {
+    AstNode? owner = node.parent;
+    while (owner != null) {
+      if (owner is MethodDeclaration) return _public(owner.name.lexeme, owner);
+      if (owner is ConstructorDeclaration) {
+        return _public(owner.name?.lexeme ?? '', owner);
+      }
+      if (owner is FunctionExpression) {
+        final declaration = owner.parent;
+        return declaration is FunctionDeclaration &&
+            declaration.parent is CompilationUnit &&
+            _public(declaration.name.lexeme, declaration);
+      }
+      owner = owner.parent;
+    }
+    return false;
   }
 
   /// Checks if a field declaration has explicit type annotation.
@@ -70,6 +130,9 @@ class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
     if (fields.type == null) {
       // Reportar en cada variable del field
       for (final variable in fields.variables) {
+        if (policy == 'selective' && !_public(variable.name.lexeme, node)) {
+          continue;
+        }
         reporter.atNode(variable, _code);
       }
     }
@@ -86,16 +149,19 @@ class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
     if (variables.type == null) {
       // Reportar en cada variable
       for (final variable in variables.variables) {
+        if (policy == 'selective' &&
+            variable.declaredFragment?.element.type is! DynamicType &&
+            !matchesAnyWildcard(variable.name.lexeme, localNames)) {
+          continue;
+        }
         reporter.atNode(variable, _code);
       }
     }
   }
 
   /// Checks if a for-statement loop variable has explicit type annotation.
-  void _checkForStatement(
-    ForStatement node,
-    DiagnosticReporter reporter,
-  ) {
+  void _checkForStatement(ForStatement node, DiagnosticReporter reporter) {
+    if (policy == 'selective') return;
     final forLoopParts = node.forLoopParts;
 
     // For loop tradicional: for (int i = 0; i < 10; i++)
@@ -122,10 +188,8 @@ class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
   }
 
   /// Checks if a for-element (in collections) has explicit type annotation.
-  void _checkForElement(
-    ForElement node,
-    DiagnosticReporter reporter,
-  ) {
+  void _checkForElement(ForElement node, DiagnosticReporter reporter) {
+    if (policy == 'selective') return;
     final forLoopParts = node.forLoopParts;
 
     // For loop en colección: [for (int i = 0; i < 10; i++) i]

@@ -1,7 +1,11 @@
+<!-- example-scope: isolated no_static_map_controllers -->
+
+> **Example contract: `no_static_map_controllers` only.** Flutter/Provider excerpts below are isolated ownership sketches, not compiled whole-profile fixtures. Getter-first order and class-containing controller names are preserved. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # no_static_map_controllers
 
 **Rule name**: `no_static_map_controllers`
-**Type**: Critical (error)
+Selection and default severity are listed in the generated README catalogue.
 
 ## Overview
 
@@ -49,28 +53,34 @@ class UIResources {
 }
 ```
 
-## ✅ Good (will not trigger the rule)
+## Isolated accepted ownership shapes for `no_static_map_controllers`
+
+The first class below is extracted from this document by
+`test/doc_sketch_regression_test.dart` and resolved with original local stand-ins.
+That test checks the isolated rule, strict class-containing names, getter-first
+method order and legacy explicit types. Provider/screen excerpts remain partial
+illustrations; the linked canonical sources provide whole-profile execution.
 
 ```dart
 // ✅ CORRECT - Controllers in scoped UiState with Provider
 class SearchUiState extends ChangeNotifier {
-  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchTextEditingController = TextEditingController();
   Timer? _debounceTimer;
 
-  TextEditingController get searchController => _searchController;
-
-  void setQuery(String query) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(Duration(milliseconds: 300), () {
-      // Perform search
-    });
-  }
+  TextEditingController get searchTextEditingController => _searchTextEditingController;
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchTextEditingController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  void setQuery(String query) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      // Perform search
+    });
   }
 }
 
@@ -91,8 +101,9 @@ class ExpedienteListScreen extends StatelessWidget {
 // ✅ CORRECT - Access via Provider in mixin
 mixin AppBarActionsMixin {
   void search(BuildContext context) {
-    final controller = context.read<SearchUiState>().searchController;
-    // Use controller
+    final TextEditingController textEditingController =
+        context.read<SearchUiState>().searchTextEditingController;
+    // Use textEditingController
   }
 }
 
@@ -134,7 +145,7 @@ This rule detects static Maps with these value types:
    ```yaml
    custom_lint:
      rules:
-       no_static_map_controllers: error
+        - no_static_map_controllers: true
    ```
 
 ### Test File: `lib/test_static_map_controllers.dart`
@@ -160,11 +171,11 @@ class BadFocusManager {
 
 // ✅ Should NOT trigger (proper scoped UiState)
 class SearchUiState extends ChangeNotifier {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _textEditingController = TextEditingController();
 
   @override
   void dispose() {
-    _controller.dispose();
+    _textEditingController.dispose();
     super.dispose();
   }
 }

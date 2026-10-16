@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_device_local_in_presentation -->
+
+> **Example contract: `no_device_local_in_presentation` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # `no_device_local_in_presentation`
 
 Prevents direct usage of `DateTime.toLocal()` in presentation/UI files.

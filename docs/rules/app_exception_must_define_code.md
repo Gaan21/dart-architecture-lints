@@ -1,3 +1,7 @@
+<!-- example-scope: isolated app_exception_must_define_code -->
+
+> **Example contract: `app_exception_must_define_code` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # app_exception_must_define_code
 
 **Severidad**: `warning`

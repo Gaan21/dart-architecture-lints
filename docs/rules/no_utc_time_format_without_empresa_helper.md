@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_utc_time_format_without_empresa_helper -->
+
+> **Example contract: `no_utc_time_format_without_empresa_helper` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # no_utc_time_format_without_empresa_helper
 
 **Severity**: warning  

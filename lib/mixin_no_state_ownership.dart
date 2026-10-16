@@ -2,6 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+import 'resource_types.dart';
 
 /// A lint rule that prevents mixins from owning resources with lifecycle
 /// (TextEditingController, Timer, FocusNode, ScrollController, etc.).
@@ -37,36 +38,16 @@ class MixinNoStateOwnershipLint extends GeneratedSkippingDartLintRule {
       // Check all fields in the mixin
       for (final member in node.members) {
         if (member is FieldDeclaration) {
-          final type = member.fields.type;
-          if (type != null && _isLifecycleResource(type)) {
+          if (member.fields.variables.any(
+            (variable) => isResourceType(
+              variable.declaredFragment?.element.type,
+              lifecycleResourceNames,
+            ),
+          )) {
             reporter.atNode(member, _code);
           }
         }
       }
     });
-  }
-
-  /// Checks if the type represents a lifecycle resource.
-  bool _isLifecycleResource(TypeAnnotation type) {
-    if (type is! NamedType) return false;
-
-    final typeName = type.name.lexeme;
-
-    // List of types that represent lifecycle resources
-    const lifecycleResources = {
-      'TextEditingController',
-      'ScrollController',
-      'AnimationController',
-      'TabController',
-      'PageController',
-      'FocusNode',
-      'Timer',
-      'StreamController',
-      'StreamSubscription',
-      'VideoPlayerController',
-      'CameraController',
-    };
-
-    return lifecycleResources.contains(typeName);
   }
 }

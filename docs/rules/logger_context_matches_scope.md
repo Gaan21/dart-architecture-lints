@@ -1,86 +1,21 @@
+<!-- example-scope: isolated logger_context_matches_scope -->
+
+> **Example contract: `logger_context_matches_scope` only.** Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md) for executed whole-profile acceptance.
+
 # logger_context_matches_scope
 
-**Rule name**: `logger_context_matches_scope`  
-**Severity**: Warning
+Checks a literal logging-context argument against the enclosing named member.
+Expected context is `Type.member`, removing one leading `_` and a trailing
+`Internal` from member names. Named constructors, class/mixin/enum/extension
+members are supported; top-level functions and unnamed constructors are skipped.
 
-## Propósito
+Legacy scope and receiver matching remain the defaults. Portable projects should
+explicitly configure `include_globs`, `logger_names`, `methods` and
+`context_argument`; `exclude_globs` can narrow scope further. The generated
+architecture sample provides generic logger names, not an application API.
 
-Hace que el `context` de logs en `AppLoggerService.error(...)` y `AppLoggerService.warning(...)` sea resistente a renames, validando que coincida con el scope real del símbolo envolvente.
+Only existing simple literal context arguments are checked; the rule does not
+require a missing argument, validate interpolated expressions or enforce error
+reporting ownership. Separate logging governance rules retain those contracts.
 
-## Alcance v1 (pragmático)
-
-La regla solo aplica cuando se cumple todo:
-
-- Archivo dentro de `work_tracker/lib/**`
-- Llamada a `AppLoggerService.error(...)` o `AppLoggerService.warning(...)`
-- Existe named arg `context`
-- `context` es string literal simple
-- La llamada está dentro de miembro de `class`/`mixin`/`enum`/`extension`
-
-Si no se puede inferir scope fiable, la regla **no reporta** (evita falsos positivos).
-
-## Derivación de expected context
-
-Formato esperado: `typeName.memberCanonical`
-
-`memberCanonical`:
-- elimina prefijo `_` si existe
-- elimina sufijo `Internal` si existe
-- mantiene el resto intacto
-
-Ejemplos:
-- `_loadEstadoInternal` -> `ClockViewModel.loadEstado`
-- `_runEffectFuture` -> `UiEffectsHandler.runEffectFuture`
-- `fromBackendValue` -> `EstadoJornadaEnum.fromBackendValue`
-
-## Diagnóstico
-
-Cuando falla, el lint muestra explícitamente:
-- `expected: "<valor esperado>"`
-- `actual: "<valor actual>"`
-
-## Ejemplos
-
-### ✅ Pasa
-
-```dart
-class ClockViewModel {
-  void _loadEstadoInternal() {
-    AppLoggerService.warning(
-      'x',
-      context: 'ClockViewModel.loadEstado',
-    );
-  }
-}
-```
-
-```dart
-class A {
-  void load() {
-    AppLoggerService.error('x', context: 'A.load');
-  }
-}
-```
-
-### ❌ Falla
-
-```dart
-class ClockViewModel {
-  void _loadEstadoInternal() {
-    AppLoggerService.warning(
-      'x',
-      context: 'ClockViewModel.loadEstadoInternal',
-    );
-  }
-}
-```
-
-## Limitaciones v1
-
-- No valida `info()` ni `debug()`.
-- No valida `context` que no sea string literal simple.
-- No reporta en funciones top-level.
-- Constructores sin nombre se omiten en v1 para evitar contextos ambiguos.
-
-## Guideline relacionada
-
+See [exact options and default semantics](../configuration.md).

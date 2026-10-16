@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_serialization_in_entities -->
+
+> **Example contract: `no_serialization_in_entities` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # no_serialization_in_entities
 
 **Rule name**: `no_serialization_in_entities`

@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_civil_utc_mix_without_helper -->
+
+> **Example contract: `no_civil_utc_mix_without_helper` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # `no_civil_utc_mix_without_helper`
 
 Detects risky mixing of civil/date-only values with UTC instant values inside

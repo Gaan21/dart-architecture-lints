@@ -1,3 +1,7 @@
+<!-- example-scope: isolated domain_entities_must_use_freezed -->
+
+> **Example contract: `domain_entities_must_use_freezed` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # domain_entities_must_use_freezed
 
 **Rule name**: `domain_entities_must_use_freezed`

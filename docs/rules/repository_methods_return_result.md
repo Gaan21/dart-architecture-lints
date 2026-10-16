@@ -1,3 +1,7 @@
+<!-- example-scope: isolated repository_methods_return_result -->
+
+> **Example contract: `repository_methods_return_result` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # repository_methods_return_result
 
 **Severidad**: `error`

@@ -24,10 +24,5 @@ jobs:
       - name: Test
         run: dart test
 
-      # The rule catalogue in the README is generated from the plugin's own
-      # getLintRules list. If a rule was added or removed without regenerating,
-      # the working tree changes here and the job fails.
-      - name: Check the rule catalogue is up to date
-        run: |
-          dart run tool/generate_rule_tables.dart
-          git diff --exit-code README.md
+      - name: Check registered selections and generated catalogue
+        run: dart run tool/generate_rule_tables.dart --check

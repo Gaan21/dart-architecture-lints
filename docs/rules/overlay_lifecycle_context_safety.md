@@ -1,3 +1,7 @@
+<!-- example-scope: isolated overlay_lifecycle_context_safety -->
+
+> **Example contract: `overlay_lifecycle_context_safety` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # overlay_lifecycle_context_safety
 
 **Rule name**: `overlay_lifecycle_context_safety`

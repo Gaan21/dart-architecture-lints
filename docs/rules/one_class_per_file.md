@@ -1,3 +1,7 @@
+<!-- example-scope: isolated one_class_per_file -->
+
+> **Example contract: `one_class_per_file` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # one_class_per_file
 
 **Nivel**: MEDIO | **Tipo**: Architectural | **Área**: File Structure

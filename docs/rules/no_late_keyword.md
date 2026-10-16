@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_late_keyword -->
+
+> **Example contract: `no_late_keyword` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # no_late_keyword
 
 **Rule name**: `no_late_keyword`  

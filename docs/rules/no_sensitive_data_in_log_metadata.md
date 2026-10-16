@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_sensitive_data_in_log_metadata -->
+
+> **Example contract: `no_sensitive_data_in_log_metadata` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # no_sensitive_data_in_log_metadata
 
 **Rule name**: `no_sensitive_data_in_log_metadata`

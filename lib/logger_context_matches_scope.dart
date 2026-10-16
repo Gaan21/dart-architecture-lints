@@ -2,6 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+import 'timezone_safety_utils.dart';
 
 /// Lint rule that validates log context against the enclosing symbol scope.
 ///
@@ -11,7 +12,36 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// - Only checks when `context:` is present and is a simple string literal.
 /// - Only checks when a reliable enclosing member scope can be inferred.
 class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
-  const LoggerContextMatchesScopeLint() : super(code: _code);
+  const LoggerContextMatchesScopeLint({
+    this.includeGlobs,
+    this.excludeGlobs = const [],
+    this.loggerNames,
+    this.methods = const ['error', 'warning'],
+    this.contextArgument = 'context',
+  }) : super(code: _code);
+
+  final List<String>? includeGlobs, loggerNames;
+  final List<String> excludeGlobs, methods;
+  final String contextArgument;
+
+  static LoggerContextMatchesScopeLint fromConfigs(CustomLintConfigs configs) {
+    final options = readRuleOptions(configs, _code.name);
+    return LoggerContextMatchesScopeLint(
+      includeGlobs: options.containsKey('include_globs')
+          ? readStringListOption(options, 'include_globs')
+          : null,
+      excludeGlobs: readStringListOption(options, 'exclude_globs'),
+      loggerNames: options.containsKey('logger_names')
+          ? readStringListOption(options, 'logger_names')
+          : null,
+      methods: readStringListOption(
+        options,
+        'methods',
+        fallback: const ['error', 'warning'],
+      ),
+      contextArgument: options['context_argument'] as String? ?? 'context',
+    );
+  }
 
   static const _code = LintCode(
     name: 'logger_context_matches_scope',
@@ -22,15 +52,18 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
         'elimina prefijo "_" y sufijo "Internal" del nombre real del miembro.',
   );
 
-  static const _methodsToCheck = {'error', 'warning'};
-
   @override
   void runOnNonGenerated(
     CustomLintResolver resolver,
     DiagnosticReporter reporter,
     CustomLintContext context,
   ) {
-    if (!_isWorkTrackerLibFile(resolver.path)) return;
+    if (matchesAnyGlob(resolver.path, excludeGlobs)) return;
+    if (includeGlobs != null) {
+      if (!matchesAnyGlob(resolver.path, includeGlobs!)) return;
+    } else if (!_isWorkTrackerLibFile(resolver.path)) {
+      return;
+    }
 
     context.registry.addMethodInvocation((MethodInvocation node) {
       _checkMethodInvocation(node, reporter);
@@ -42,7 +75,7 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
     DiagnosticReporter reporter,
   ) {
     final methodName = node.methodName.name;
-    if (!_methodsToCheck.contains(methodName)) return;
+    if (!methods.contains(methodName)) return;
     if (!_isAppLoggerServiceCall(node)) return;
 
     final contextExpression = _findContextArgument(node.argumentList);
@@ -99,6 +132,7 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
   }
 
   bool _isLoggerServiceName(String name) {
+    if (loggerNames != null) return matchesAnyWildcard(name, loggerNames!);
     return name == 'AppLoggerService' ||
         name == 'appLoggerService' ||
         name.endsWith('LoggerService');
@@ -106,7 +140,7 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
 
   Expression? _findContextArgument(ArgumentList args) {
     for (final arg in args.arguments) {
-      if (arg is NamedExpression && arg.name.label.name == 'context') {
+      if (arg is NamedExpression && arg.name.label.name == contextArgument) {
         return arg.expression;
       }
     }

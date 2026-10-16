@@ -1,3 +1,7 @@
+<!-- example-scope: isolated viewmodels_no_flutter_types -->
+
+> **Example contract: `viewmodels_no_flutter_types` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # viewmodels_no_flutter_types
 
 **Rule name**: `viewmodels_no_flutter_types`

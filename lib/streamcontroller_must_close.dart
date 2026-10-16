@@ -1,233 +1,245 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
-import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+import 'generated_skipping_dart_lint_rule.dart';
+import 'resource_types.dart';
 
-/// A lint rule that ensures StreamController fields are closed in dispose() method.
-/// Prevents memory leaks by enforcing proper cleanup of StreamControllers.
+/// Checks locally owned controllers without taking ownership of injected ones.
 class StreamControllerMustClose extends GeneratedSkippingDartLintRule {
-  /// Creates an instance of [StreamControllerMustClose].
   const StreamControllerMustClose() : super(code: _code);
 
-  /// The lint code associated with this rule.
   static const _code = LintCode(
-    correctionMessage:
-        'Añade _streamController.close() en el método dispose() antes de llamar super.dispose().\n'
-        'Si el StreamController es inyectado externamente, añade comentario: // ignore: streamcontroller_must_close\n'
-        'Ejemplo:\n'
-        '  class MyViewModel extends BaseViewModelWithEffects<User> {\n'
-        '    final _effects = StreamController<UiEffect>.broadcast();\n'
-        '    Stream<UiEffect> get uiEffects => _effects.stream;\n'
-        '    \n'
-        '    @override\n'
-        '    void dispose() {\n'
-        '      _effects.close(); // ← Cierra antes de super.dispose()\n'
-        '      super.dispose();\n'
-        '    }\n'
-        '  }',
     name: 'streamcontroller_must_close',
     problemMessage:
-        'StreamController debe cerrarse en dispose() para evitar memory leaks.',
+        'An owned StreamController is not closed on every normal dispose exit.',
+    correctionMessage:
+        'Close this owned controller in dispose or a local cleanup helper. '
+        'Do not close borrowed controllers; ownership must remain with their creator.',
   );
 
-  /// Executes the lint rule to detect StreamController fields without .close() in dispose.
   @override
   void runOnNonGenerated(
     CustomLintResolver resolver,
     DiagnosticReporter reporter,
     CustomLintContext context,
   ) {
-    context.registry.addClassDeclaration((ClassDeclaration node) {
-      // Solo verificar clases que:
-      // 1. Están en lib/presentation/viewModels/
-      // 2. O extienden ChangeNotifier, BaseViewModel, BaseViewModelWithEffects
-      if (!_shouldCheckClass(node, resolver)) {
+    context.registry.addClassDeclaration((node) {
+      final element = node.declaredFragment?.element;
+      final bases =
+          element?.allSupertypes.map((type) => type.element.name) ?? [];
+      if (!resolver.path.contains('/presentation/viewModels/') &&
+          !bases.any(
+            const {
+              'ChangeNotifier',
+              'BaseViewModel',
+              'BaseViewModelWithEffects',
+            }.contains,
+          )) {
         return;
       }
-
-      // Recopilar todos los StreamController fields
-      final streamControllerFields = <FieldDeclaration>[];
-      for (final member in node.members) {
-        if (member is FieldDeclaration) {
-          if (_isStreamControllerField(member)) {
-            streamControllerFields.add(member);
+      final methods = node.members.whereType<MethodDeclaration>().toList();
+      final dispose = methods
+          .where((method) => method.name.lexeme == 'dispose')
+          .firstOrNull;
+      for (final field in node.members.whereType<FieldDeclaration>()) {
+        if (field.isStatic) continue;
+        for (final variable in field.fields.variables) {
+          final fieldElement = variable.declaredFragment?.element;
+          if (!isResourceType(fieldElement?.type, const {
+            'StreamController',
+          }, libraryUri: 'dart:async')) {
+            continue;
           }
-        }
-      }
-
-      // Si no hay StreamControllers, no hay nada que verificar
-      if (streamControllerFields.isEmpty) {
-        return;
-      }
-
-      // Buscar método dispose()
-      MethodDeclaration? disposeMethod;
-      for (final member in node.members) {
-        if (member is MethodDeclaration && member.name.lexeme == 'dispose') {
-          disposeMethod = member;
-          break;
-        }
-      }
-
-      // Si no hay dispose(), reportar todos los StreamControllers
-      if (disposeMethod == null) {
-        for (final field in streamControllerFields) {
-          reporter.atNode(field, _code);
-        }
-        return;
-      }
-
-      // Verificar que cada StreamController se cierre en dispose()
-      for (final field in streamControllerFields) {
-        final fieldNames = _getFieldNames(field);
-        var isClosed = false;
-
-        for (final fieldName in fieldNames) {
-          if (_disposeCallsClose(disposeMethod, fieldName)) {
-            isClosed = true;
-            break;
+          // No initializer means borrowed/unknown ownership, unless a constructor
+          // initializer explicitly creates the resource.
+          final initializers = <Expression>[
+            if (variable.initializer != null) variable.initializer!,
+            for (final constructor
+                in node.members.whereType<ConstructorDeclaration>())
+              for (final initializer
+                  in constructor.initializers
+                      .whereType<ConstructorFieldInitializer>())
+                if (initializer.fieldName.element == fieldElement)
+                  initializer.expression,
+          ];
+          if (!initializers
+              .map(_unwrapReference)
+              .any(
+                (expression) =>
+                    expression is! Identifier && expression is! PropertyAccess,
+              )) {
+            continue;
           }
-        }
-
-        if (!isClosed) {
-          reporter.atNode(field, _code);
+          final flow = _CleanupFlow(fieldElement!, methods);
+          final paths = dispose == null
+              ? const [_Path(false)]
+              : flow.body(dispose.body, const [_Path(false)], {});
+          if (paths.any((path) => path.exit != _Exit.thrown && !path.closed)) {
+            reporter.atNode(variable, _code);
+          }
         }
       }
     });
   }
+}
 
-  /// Determines if a class should be checked for StreamController cleanup.
-  bool _shouldCheckClass(ClassDeclaration node, CustomLintResolver resolver) {
-    final uri = resolver.source.uri;
-    final path = uri.path;
-
-    // 1. Verificar si está en presentation/viewModels/
-    if (path.contains('/presentation/viewModels/')) {
-      return true;
+/// These wrappers preserve resource identity; they do not transfer ownership.
+Expression _unwrapReference(Expression expression) {
+  while (true) {
+    if (expression is ParenthesizedExpression) {
+      expression = expression.expression;
+    } else if (expression is AsExpression) {
+      expression = expression.expression;
+    } else if (expression is PostfixExpression &&
+        expression.operator.lexeme == '!') {
+      expression = expression.operand;
+    } else {
+      return expression;
     }
+  }
+}
 
-    // 2. Verificar si extiende ChangeNotifier, BaseViewModel, o BaseViewModelWithEffects
-    final extendsClause = node.extendsClause;
-    if (extendsClause != null) {
-      final superclassName = extendsClause.superclass.name.lexeme;
-      final viewModelBaseClasses = {
-        'ChangeNotifier',
-        'BaseViewModel',
-        'BaseViewModelWithEffects',
-      };
+enum _Exit { active, returned, thrown }
 
-      if (viewModelBaseClasses.contains(superclassName)) {
-        return true;
-      }
+class _Path {
+  const _Path(this.closed, [this.exit = _Exit.active]);
+  final bool closed;
+  final _Exit exit;
+}
+
+class _CleanupFlow {
+  _CleanupFlow(this.field, this.methods);
+  final Element field;
+  final List<MethodDeclaration> methods;
+
+  List<_Path> body(
+    FunctionBody body,
+    List<_Path> paths,
+    Set<Element> visiting,
+  ) {
+    if (body is BlockFunctionBody) {
+      return statement(body.block, paths, visiting);
     }
-
-    return false;
+    if (body is ExpressionFunctionBody) {
+      return expression(body.expression, paths, visiting);
+    }
+    return paths;
   }
 
-  /// Checks if a field is a StreamController.
-  bool _isStreamControllerField(FieldDeclaration field) {
-    final type = field.fields.type;
-    if (type is NamedType) {
-      final typeName = type.name.lexeme;
-      return typeName == 'StreamController';
-    }
-    return false;
-  }
-
-  /// Extracts field names from a field declaration.
-  List<String> _getFieldNames(FieldDeclaration field) {
-    return field.fields.variables.map((v) => v.name.lexeme).toList();
-  }
-
-  /// Checks if dispose() method calls .close() on the given field name.
-  bool _disposeCallsClose(MethodDeclaration disposeMethod, String fieldName) {
-    final body = disposeMethod.body;
-    if (body is! BlockFunctionBody) {
-      return false;
-    }
-
-    return _blockContainsClose(body.block, fieldName);
-  }
-
-  /// Recursively searches for fieldName.close() calls in a block of statements.
-  bool _blockContainsClose(Block block, String fieldName) {
-    for (final statement in block.statements) {
-      if (_statementContainsClose(statement, fieldName)) {
-        return true;
+  List<_Path> statement(
+    Statement node,
+    List<_Path> paths,
+    Set<Element> visiting,
+  ) {
+    final done = paths.where((path) => path.exit != _Exit.active).toList();
+    final active = paths.where((path) => path.exit == _Exit.active).toList();
+    if (active.isEmpty) return paths;
+    List<_Path> result;
+    if (node is Block) {
+      result = active;
+      for (final child in node.statements) {
+        result = statement(child, result, visiting);
+      }
+    } else if (node is ExpressionStatement) {
+      result = expression(node.expression, active, visiting);
+    } else if (node is ReturnStatement) {
+      result = node.expression == null
+          ? active
+          : expression(node.expression!, active, visiting);
+      result = result
+          .map((path) => _Path(path.closed, _Exit.returned))
+          .toList();
+    } else if (node is IfStatement) {
+      result = [
+        ...statement(node.thenStatement, active, visiting),
+        ...node.elseStatement == null
+            ? active
+            : statement(node.elseStatement!, active, visiting),
+      ];
+    } else if (node is TryStatement) {
+      result = statement(node.body, active, visiting);
+      // A catch can be entered before any successful cleanup in the try body.
+      for (final clause in node.catchClauses) {
+        result.addAll(statement(clause.body, active, visiting));
+      }
+      if (node.finallyBlock != null) {
+        result = [
+          for (final path in result)
+            for (final finalPath in statement(node.finallyBlock!, [
+              _Path(path.closed),
+            ], visiting))
+              _Path(
+                finalPath.closed,
+                finalPath.exit == _Exit.active ? path.exit : finalPath.exit,
+              ),
+        ];
+      }
+    } else if (node is ForStatement ||
+        node is WhileStatement ||
+        node is DoStatement) {
+      final loopBody = node is ForStatement
+          ? node.body
+          : node is WhileStatement
+          ? node.body
+          : (node as DoStatement).body;
+      result = [...active, ...statement(loopBody, active, visiting)];
+    } else {
+      // Unsupported control flow cannot prove cleanup; keep an unclosed exit.
+      result = active;
+      if (node is SwitchStatement) {
+        result = [
+          ...active,
+          for (final path in active) _Path(path.closed, _Exit.returned),
+        ];
       }
     }
-    return false;
+    // There are only six distinct states; avoid exponential branch growth.
+    return {
+      for (final path in [...done, ...result]) (path.closed, path.exit),
+    }.map((state) => _Path(state.$1, state.$2)).toList();
   }
 
-  /// Checks if a statement contains fieldName.close() call.
-  bool _statementContainsClose(Statement statement, String fieldName) {
-    // Direct expression statement with fieldName.close()
-    if (statement is ExpressionStatement) {
-      return _expressionIsClose(statement.expression, fieldName);
+  List<_Path> expression(
+    Expression node,
+    List<_Path> paths,
+    Set<Element> visiting, {
+    bool awaited = false,
+  }) {
+    if (node is AwaitExpression) {
+      return expression(node.expression, paths, visiting, awaited: true);
     }
-
-    // Check inside if statements
-    if (statement is IfStatement) {
-      return _statementContainsClose(statement.thenStatement, fieldName) ||
-          (statement.elseStatement != null &&
-              _statementContainsClose(statement.elseStatement!, fieldName));
+    if (node is ThrowExpression) {
+      return [for (final path in paths) _Path(path.closed, _Exit.thrown)];
     }
-
-    // Check inside try-catch-finally
-    if (statement is TryStatement) {
-      return _blockContainsClose(statement.body, fieldName) ||
-          statement.catchClauses.any(
-            (clause) => _blockContainsClose(clause.body, fieldName),
-          ) ||
-          (statement.finallyBlock != null &&
-              _blockContainsClose(statement.finallyBlock!, fieldName));
+    if (node is! MethodInvocation) return paths;
+    final target = node.realTarget;
+    Element? targetElement;
+    if (target is SimpleIdentifier) targetElement = target.element;
+    if (target is PropertyAccess && target.target is ThisExpression) {
+      targetElement = target.propertyName.element;
     }
-
-    // Check nested blocks
-    if (statement is Block) {
-      return _blockContainsClose(statement, fieldName);
+    if (targetElement is PropertyAccessorElement) {
+      targetElement = targetElement.variable;
     }
-
-    return false;
-  }
-
-  /// Checks if an expression is fieldName.close() or await fieldName.close().
-  bool _expressionIsClose(Expression expression, String fieldName) {
-    // Handle await expression
-    if (expression is AwaitExpression) {
-      return _expressionIsClose(expression.expression, fieldName);
+    if (node.methodName.name == 'close' && targetElement == field) {
+      return [for (final path in paths) _Path(true, path.exit)];
     }
-
-    // Handle method invocation
-    if (expression is MethodInvocation) {
-      // Check if method name is "close"
-      if (expression.methodName.name != 'close') {
-        return false;
-      }
-
-      // Check target
-      final target = expression.target;
-
-      // Direct field access: _controller.close()
-      if (target is SimpleIdentifier && target.name == fieldName) {
-        return true;
-      }
-
-      // Nullable field access: _controller?.close()
-      if (target is SimpleIdentifier && target.name == fieldName) {
-        return true;
-      }
-
-      // Property access with null-aware: _controller?.close()
-      if (target is PropertyAccess) {
-        final propertyTarget = target.target;
-        if (propertyTarget is SimpleIdentifier &&
-            propertyTarget.name == fieldName) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+    // Only a resolved call on this instance may establish local helper cleanup.
+    if (target != null && target is! ThisExpression) return paths;
+    final called = node.methodName.element;
+    if (called == null || visiting.contains(called)) return paths;
+    final helper = methods
+        .where((method) => method.declaredFragment?.element == called)
+        .firstOrNull;
+    if (helper == null) return paths;
+    if (helper.body.isAsynchronous && !awaited) return paths;
+    return [
+      for (final path in body(helper.body, paths, {...visiting, called}))
+        _Path(
+          path.closed,
+          path.exit == _Exit.returned ? _Exit.active : path.exit,
+        ),
+    ];
   }
 }

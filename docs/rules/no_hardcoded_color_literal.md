@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_hardcoded_color_literal -->
+
+> **Example contract: `no_hardcoded_color_literal` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # `no_hardcoded_color_literal`
 
 Prevents using `Color(0x...)` with a hardcoded hex integer literal in presentation files.

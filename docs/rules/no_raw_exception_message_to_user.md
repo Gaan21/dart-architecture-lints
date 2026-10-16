@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_raw_exception_message_to_user -->
+
+> **Example contract: `no_raw_exception_message_to_user` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # no_raw_exception_message_to_user
 
 **Severidad**: `warning`

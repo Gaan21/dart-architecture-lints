@@ -1,289 +1,399 @@
 import 'dart:convert';
 import 'dart:io';
 
-class RuleMetadata {
-  RuleMetadata({
-    required this.id,
-    required this.section,
-    required this.description,
-    this.status,
+import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:dart_architecture_lints/dart_architecture_lints.dart';
+import 'package:package_config/package_config.dart';
+import 'package:yaml/yaml.dart';
+import 'contract_export.dart';
+import 'example_docs.dart';
+
+/// Uses live registrations, never a second list of rule IDs or severities.
+Map<String, LintRule> registeredRules() {
+  final registered = createPlugin().getLintRules(
+    CustomLintConfigs.parse(null, PackageConfig([])),
+  );
+  final rules = {for (final rule in registered) rule.code.name: rule};
+  if (registered.length != rules.length) {
+    throw StateError('Duplicate registration');
+  }
+  return rules;
+}
+
+/// Validates the list syntax actually consumed by custom_lint 0.8.1.
+void validateConfiguration(
+  String source,
+  Set<String> registered, {
+  bool complete = true,
+}) {
+  final yaml = loadYaml(source) as Map;
+  final custom = yaml['custom_lint'] as Map;
+  final entries = custom['rules'];
+  if (entries is! List) {
+    throw FormatException('custom_lint.rules must be a list');
+  }
+  final seen = <String>{};
+  for (final entry in entries) {
+    final id = entry is String ? entry : (entry as Map).keys.first as String;
+    if (!registered.contains(id)) {
+      throw FormatException('Unregistered rule: $id');
+    }
+    if (!seen.add(id)) throw FormatException('Duplicate rule: $id');
+    if (entry is Map) {
+      if (entry.values.first is! bool && entry.values.first != null) {
+        throw FormatException('$id: use a boolean and sibling option keys');
+      }
+      if (entry.containsKey('severity')) {
+        throw FormatException('Put severity overrides under analyzer.errors');
+      }
+    }
+  }
+  if (complete && seen.length != registered.length) {
+    throw FormatException('Missing selections: ${registered.difference(seen)}');
+  }
+  final errors = (yaml['analyzer'] as Map?)?['errors'];
+  if (errors is Map) {
+    for (final id in errors.keys) {
+      if (!registered.contains(id)) {
+        throw FormatException('Unregistered severity: $id');
+      }
+    }
+  }
+}
+
+const _styleRules = {
+  'method_order',
+  'variable_name_should_contain_class_name',
+  'enforce_final_variables',
+  'require_explicit_types',
+};
+
+const _approvedLanguageExceptions = {
+  'no_late_keyword',
+  'no_bang_operator',
+  'one_class_per_file',
+};
+
+/// The same selections drive generated YAML and the read-only guidance check.
+Map<String, bool> profileSelections(Iterable<String> registered, String kind) {
+  if (!const {'legacy', 'architecture', 'style'}.contains(kind)) {
+    throw ArgumentError.value(kind, 'kind', 'Unknown profile');
+  }
+  return {
+    for (final id in registered.toList()..sort())
+      id: switch (kind) {
+        'legacy' => true,
+        'architecture' => !_approvedLanguageExceptions.contains(id),
+        _ => _styleRules.contains(id),
+      },
+  };
+}
+
+/// Reads Rule/Selection table rows only; prose and fenced examples are ignored.
+void validateGuidance(String markdown, Map<String, bool> expected) {
+  final seen = <String>{};
+  var inTable = false;
+  String? fence;
+  for (final raw in const LineSplitter().convert(markdown)) {
+    final line = raw.trim();
+    final marker = RegExp(r'^(`{3,}|~{3,})').firstMatch(line)?.group(1);
+    if (marker != null) {
+      if (fence == null) {
+        fence = marker;
+      } else if (marker[0] == fence[0] && marker.length >= fence.length) {
+        fence = null;
+      }
+      inTable = false;
+      continue;
+    }
+    if (fence != null) continue;
+    if (!line.startsWith('|') || !line.endsWith('|')) {
+      inTable = false;
+      continue;
+    }
+    final cells = line
+        .substring(1, line.length - 1)
+        .split('|')
+        .map((cell) => cell.trim())
+        .toList();
+    if (cells.length >= 2 && cells[0] == 'Rule' && cells[1] == 'Selection') {
+      inTable = true;
+      continue;
+    }
+    if (!inTable) continue;
+    if (cells.length >= 2 &&
+        cells.take(2).every((cell) => RegExp(r'^:?-{3,}:?$').hasMatch(cell))) {
+      continue;
+    }
+    final id = RegExp(r'^`([^`]+)`$').firstMatch(cells[0])?.group(1);
+    if (id == null || cells.length < 2) {
+      throw FormatException(
+        'Expected a backticked rule ID and Selection cell: $line',
+      );
+    }
+    if (!expected.containsKey(id)) {
+      throw FormatException('Unknown guidance rule: $id');
+    }
+    if (!seen.add(id)) throw FormatException('Duplicate guidance rule: $id');
+    final state = cells[1];
+    if (state != 'enabled' && state != 'disabled') {
+      throw FormatException('Invalid guidance selection for $id: $state');
+    }
+    final wanted = expected[id]! ? 'enabled' : 'disabled';
+    if (state != wanted) {
+      throw FormatException(
+        'Guidance selection for $id: expected $wanted, got $state',
+      );
+    }
+  }
+  final missing = expected.keys.toSet().difference(seen).toList()..sort();
+  if (missing.isNotEmpty) {
+    throw FormatException('Missing guidance rules: ${missing.join(', ')}');
+  }
+}
+
+const usage =
+    '''Usage: dart run tool/generate_rule_tables.dart [--check] [--guidance-root PATH]
+       [--export-contract PATH] [--verify-contract PATH]
+
+Generate registered rule tables and explicit profile selections.
+  --check                Check generated files without writing them.
+  --guidance-root PATH   Read PATH/profiles/architecture.md and verify its
+                         Rule/Selection table against architecture selections.
+                         Never writes to PATH; accepts enabled/disabled cells.
+  --export-contract PATH Write canonical architecture identity JSON to PATH.
+  --verify-contract PATH Compare PATH byte-for-byte with this checkout's contract.
+                         Contract operations check source without regenerating it.
+  -h, --help             Show this help without generating files.
+''';
+
+class GeneratorOptions {
+  GeneratorOptions({
+    this.check = false,
+    this.guidanceRoot,
+    this.help = false,
+    this.exportPath,
+    this.verifyPath,
   });
+  final bool check, help;
+  final String? guidanceRoot, exportPath, verifyPath;
 
-  final String id;
-  final String section;
-  final String description;
-  final String? status;
-
-  factory RuleMetadata.fromJson(Map<String, dynamic> json) {
-    return RuleMetadata(
-      id: json['id'] as String,
-      section: json['section'] as String,
-      description: json['description'] as String,
-      status: json['status'] as String?,
+  factory GeneratorOptions.parse(List<String> args) {
+    var check = false;
+    var help = false;
+    final paths = <String, String>{};
+    for (var index = 0; index < args.length; index++) {
+      final argument = args[index];
+      if (argument == '--check') {
+        check = true;
+      } else if (argument == '--help' || argument == '-h') {
+        help = true;
+      } else if (const {
+        '--guidance-root',
+        '--export-contract',
+        '--verify-contract',
+      }.contains(argument.split('=').first)) {
+        final flag = argument.split('=').first;
+        if (paths.containsKey(flag)) throw FormatException('Duplicate $flag');
+        String path;
+        if (argument == flag) {
+          if (++index >= args.length || args[index].startsWith('--')) {
+            throw FormatException('$flag requires PATH');
+          }
+          path = args[index];
+        } else {
+          path = argument.substring(flag.length + 1);
+        }
+        if (path.trim().isEmpty) {
+          throw FormatException('$flag requires PATH');
+        }
+        paths[flag] = path;
+      } else {
+        throw FormatException('Unknown argument: $argument');
+      }
+    }
+    return GeneratorOptions(
+      check: check,
+      guidanceRoot: paths['--guidance-root'],
+      exportPath: paths['--export-contract'],
+      verifyPath: paths['--verify-contract'],
+      help: help,
     );
   }
 }
 
-class RuleInfo {
-  RuleInfo({
-    required this.id,
-    required this.section,
-    required this.description,
-    required this.severity,
-    this.status,
-  });
-
-  final String id;
-  final String section;
-  final String description;
-  final String severity;
-  final String? status;
-
-  String get severityLabel =>
-      severity == 'error'
-          ? 'Error'
-          : severity == 'warning'
-              ? 'Warning'
-              : severity == 'info'
-                  ? 'Info'
-                  : 'Unspecified';
+String profile(Map<String, LintRule> rules, String kind) {
+  final output = StringBuffer(
+    '''# Generated by tool/generate_rule_tables.dart; edit selections in your project.
+# $kind selection. See docs/configuration.md before adopting a profile.
+analyzer:
+  plugins:
+    - custom_lint
+custom_lint:
+  enable_all_lint_rules: false
+  rules:
+''',
+  );
+  for (final entry in profileSelections(rules.keys, kind).entries) {
+    final id = entry.key;
+    final enabled = entry.value;
+    output.writeln('    - $id: $enabled');
+    if (enabled && kind != 'legacy' && id == 'require_explicit_types') {
+      output.writeln('      policy: selective');
+    }
+    if (enabled &&
+        kind == 'architecture' &&
+        id == 'logger_context_matches_scope') {
+      output.writeln('      include_globs: ["**/lib/**"]');
+      output.writeln('      logger_names: ["Logger", "logger"]');
+    }
+  }
+  return output.toString();
 }
 
-void main() {
-  final metadata = _loadMetadata();
-  final classToCode = _loadClassToCode();
-  final ruleIds = _loadRuleIdsFromPlugin(classToCode);
-  final severityMap = _loadSeverityMap();
-
-  final activeSet = ruleIds.toSet();
-
-  final rules = <RuleInfo>[];
-  final seen = <String>{};
-
-  for (final meta in metadata) {
-    if (!activeSet.contains(meta.id)) {
-      continue; // skip metadata for disabled rules (if any)
+void main(List<String> args) {
+  try {
+    final options = GeneratorOptions.parse(args);
+    if (options.help) {
+      stdout.write(usage);
+      return;
     }
-
-    // A rule with no entry in the template has no severity assigned yet. Report it
-    // as unspecified rather than aborting: hiding the whole catalogue over a gap is
-    // how the published tables drifted from the plugin in the first place.
-    final severity = severityMap[meta.id] ?? 'unspecified';
-
-    rules.add(RuleInfo(
-      id: meta.id,
-      section: meta.section,
-      description: meta.description,
-      severity: severity,
-      status: meta.status,
-    ));
-    seen.add(meta.id);
-  }
-
-  final missingMetadata = activeSet.difference(seen);
-  if (missingMetadata.isNotEmpty) {
-    stderr.writeln('Metadata missing for rules: ${missingMetadata.join(', ')}');
+    generate(options);
+  } on FormatException catch (error) {
+    stderr.writeln(error.message);
     exitCode = 1;
-    return;
+  } on FileSystemException catch (error) {
+    stderr.writeln(error);
+    exitCode = 1;
   }
+}
 
-  final sections = <String, List<RuleInfo>>{};
-  final sectionOrder = <String>[];
-  for (final rule in rules) {
-    final list = sections.putIfAbsent(rule.section, () {
-      sectionOrder.add(rule.section);
-      return <RuleInfo>[];
-    });
-    list.add(rule);
+void generate(GeneratorOptions options) {
+  final check =
+      options.check || options.exportPath != null || options.verifyPath != null;
+  final rules = registeredRules();
+  if (options.guidanceRoot != null) {
+    final file = File.fromUri(
+      Directory(
+        options.guidanceRoot!,
+      ).absolute.uri.resolve('profiles/architecture.md'),
+    );
+    final selections = profileSelections(rules.keys, 'architecture');
+    validateGuidance(file.readAsStringSync(), selections);
+    final enabled = selections.values.where((value) => value).length;
+    stdout.writeln(
+      'Guidance table matches all ${rules.length} registrations: '
+      '$enabled enabled, ${rules.length - enabled} disabled.',
+    );
   }
-
-  final counts = <String, int>{'error': 0, 'warning': 0, 'info': 0, 'unspecified': 0};
-  for (final rule in rules) {
-    counts[rule.severity] = (counts[rule.severity] ?? 0) + 1;
+  final metadata =
+      (jsonDecode(File('tool/rule_metadata.json').readAsStringSync()) as List)
+          .cast<Map<String, dynamic>>();
+  final ids = metadata.map((entry) => entry['id'] as String).toSet();
+  if (ids.length != metadata.length ||
+      ids.difference(rules.keys.toSet()).isNotEmpty ||
+      rules.keys.toSet().difference(ids).isNotEmpty) {
+    throw StateError(
+      'Metadata must match live registrations exactly: '
+      'stale=${ids.difference(rules.keys.toSet())}, '
+      'missing=${rules.keys.toSet().difference(ids)}',
+    );
   }
-
-  final total = rules.length;
-  final featureLine =
-      '- **🔧 Configurable Severities** - Error/Warning/Info levels with recommended defaults (${counts['error']} error, ${counts['warning']} warning, ${counts['info']} info)';
-  final totalLine =
-      '**Total**: **${rules.length} active rules** '
-      '(${counts['error']} error, ${counts['warning']} warning, ${counts['info']} info, '
-      "${counts['unspecified'] ?? 0} severity unspecified)";
-  final errorHeading = '### 🔴 ERROR (${counts['error']} rules)';
-  final warningHeading = '### ⚠️ WARNING (${counts['warning']} rules)';
-
-  final sectionTables = <String, String>{};
-  for (final section in sectionOrder) {
-    final rulesInSection = sections[section]!;
-    final hasStatus = rulesInSection.any((rule) => rule.status != null);
-    final buffer = StringBuffer();
-    if (hasStatus) {
-      buffer.writeln('| Rule | Description | Severity | Status |');
-      buffer.writeln('|------|-------------|----------|--------|');
-      for (final rule in rulesInSection) {
-        buffer.writeln(
-            '| `${rule.id}` | ${rule.description} | ${rule.severityLabel} | ${rule.status ?? ''} |');
+  final generated = <String, String>{
+    'analysis_options.yaml.template': profile(rules, 'architecture'),
+    'profiles/architecture.yaml': profile(rules, 'architecture'),
+    'profiles/legacy.yaml': profile(rules, 'legacy'),
+    'profiles/style.yaml': profile(rules, 'style'),
+    ...scopedRuleDocs(rules.keys),
+  };
+  for (final entry in generated.entries) {
+    if (entry.key.endsWith('.yaml') || entry.key.endsWith('.template')) {
+      validateConfiguration(entry.value, rules.keys.toSet());
+    }
+  }
+  final sections = <String, List<Map<String, dynamic>>>{};
+  for (final entry in metadata) {
+    sections.putIfAbsent(entry['section'] as String, () => []).add(entry);
+  }
+  var readme = File('README.md').readAsStringSync();
+  readme = replaceSection(
+    readme,
+    'AUTOGENERATED:RULE_TOTAL_COUNTS',
+    '**Total**: **${rules.length} registered rules**. All are enabled by default; '
+        'severity below is the actual LintCode default, before analyzer overrides.',
+  );
+  for (final section in sections.entries) {
+    final buffer = StringBuffer(
+      '| Rule | Description | Default severity |\n'
+      '|------|-------------|------------------|\n',
+    );
+    for (final entry in section.value) {
+      final rule = rules[entry['id']]!;
+      buffer.writeln(
+        '| `${entry['id']}` | ${entry['description']} | '
+        '${rule.code.errorSeverity.name.toLowerCase()} |',
+      );
+    }
+    readme = replaceSection(
+      readme,
+      'AUTOGENERATED:${section.key}',
+      buffer.toString().trimRight(),
+    );
+  }
+  generated['README.md'] = readme;
+  generated['docs/example_coverage.md'] = exampleCoverage(rules.keys);
+  for (final entry in generated.entries) {
+    final file = File(entry.key);
+    if (check) {
+      if (!file.existsSync() || file.readAsStringSync() != entry.value) {
+        stderr.writeln('Generated file drift: ${entry.key}');
+        exitCode = 1;
+      }
+      // Validate checked-in files too, so stale entries fail explicitly.
+      if (entry.key.endsWith('.yaml') || entry.key.endsWith('.template')) {
+        if (file.existsSync()) {
+          validateConfiguration(file.readAsStringSync(), rules.keys.toSet());
+        }
       }
     } else {
-      buffer.writeln('| Rule | Description | Severity |');
-      buffer.writeln('|------|-------------|----------|');
-      for (final rule in rulesInSection) {
-        buffer.writeln(
-            '| `${rule.id}` | ${rule.description} | ${rule.severityLabel} |');
-      }
-    }
-    sectionTables[section] = buffer.toString().trimRight();
-  }
-
-  final readmeFile = File('README.md');
-  var readme = readmeFile.readAsStringSync();
-
-  readme = _replaceSection(readme, 'AUTOGENERATED:RULE_FEATURE_COUNTS', featureLine);
-  readme = _replaceSection(readme, 'AUTOGENERATED:RULE_TOTAL_COUNTS', totalLine);
-  readme = _replaceSection(readme, 'AUTOGENERATED:RULE_HEADING_ERROR', errorHeading);
-  readme = _replaceSection(readme, 'AUTOGENERATED:RULE_HEADING_WARNING', warningHeading);
-
-  for (final entry in sectionTables.entries) {
-    final marker = 'AUTOGENERATED:${entry.key}';
-    readme = _replaceSection(readme, marker, entry.value);
-  }
-
-  readmeFile.writeAsStringSync(readme);
-
-  stdout.writeln('README.md updated with $total rules.');
-}
-
-List<RuleMetadata> _loadMetadata() {
-  final file = File('tool/rule_metadata.json');
-  if (!file.existsSync()) {
-    stderr.writeln('Missing tool/rule_metadata.json');
-    exit(1);
-  }
-
-  final data = jsonDecode(file.readAsStringSync()) as List<dynamic>;
-  return data
-      .map((e) => RuleMetadata.fromJson(e as Map<String, dynamic>))
-      .toList();
-}
-
-Map<String, String> _loadClassToCode() {
-  final directory = Directory('lib');
-  final map = <String, String>{};
-  for (final entity in directory.listSync(recursive: true)) {
-    if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    final content = entity.readAsStringSync();
-    final classMatches = RegExp(r'class\s+(\w+)\s+extends\s+[^\s{]+\s*{')
-        .allMatches(content);
-    for (final match in classMatches) {
-      final className = match.group(1)!;
-      final body = _extractClassBody(content, match.end);
-      if (body == null) continue;
-      final lintStart = body.indexOf('LintCode(');
-      if (lintStart == -1) {
-        continue;
-      }
-      final lintSnippet = body.substring(lintStart);
-      final lintMatch =
-          RegExp(r"name:\s*'([^']+)'", dotAll: true).firstMatch(lintSnippet);
-      if (lintMatch != null) {
-        map[className] = lintMatch.group(1)!;
-      }
+      file.parent.createSync(recursive: true);
+      file.writeAsStringSync(entry.value);
     }
   }
-  return map;
-}
-
-String? _extractClassBody(String content, int start) {
-  var depth = 1;
-  final buffer = StringBuffer();
-  for (var i = start; i < content.length; i++) {
-    final char = content[i];
-    buffer.write(char);
-    if (char == '{') {
-      depth++;
-    } else if (char == '}') {
-      depth--;
-      if (depth == 0) {
-        return buffer.toString();
-      }
+  stdout.writeln(
+    '${check ? 'Checked' : 'Generated'} ${rules.length} rule selections and tables.',
+  );
+  if (exitCode != 0) return;
+  if (options.exportPath != null || options.verifyPath != null) {
+    final contract = exportContract(
+      Directory.current,
+      expectedArchitecture: profile(rules, 'architecture'),
+    );
+    if (options.verifyPath != null) {
+      verifyContract(File(options.verifyPath!), contract);
+      stdout.writeln('Contract matches this checkout.');
+    }
+    if (options.exportPath != null) {
+      writeContract(File(options.exportPath!), contract, Directory.current);
+      stdout.writeln('Exported canonical architecture contract.');
+      stdout.writeln(
+        'Source digest: ${(jsonDecode(contract) as Map)['source_digest']}',
+      );
     }
   }
-  return null;
 }
 
-List<String> _loadRuleIdsFromPlugin(Map<String, String> classToCode) {
-  final plugin = File('lib/${_packageName()}.dart').readAsStringSync();
-  final match = RegExp(r'getLintRules\([^)]*\)\s*=>\s*\[(.*?)\];', dotAll: true)
-      .firstMatch(plugin);
-  if (match == null) {
-    stderr.writeln('Unable to parse getLintRules from the plugin entrypoint');
-    exit(1);
-  }
-
-  final block = match.group(1)!;
-  final cleaned = block
-      .split('\n')
-      .map((line) => line.split('//').first.trim())
-      .where((line) => line.isNotEmpty)
-      .join('\n');
-
-  // Matches both plain registrations (`const FooLint()`) and configurable ones
-  // (`FooLint.fromConfigs(configs)`). Missing the second form silently hid every
-  // configurable rule from the generated catalogue.
-  final matches =
-      RegExp(r'(?:const\s+)?(\w+)\s*(?:\.fromConfigs)?\(').allMatches(cleaned);
-  final ids = <String>[];
-  for (final m in matches) {
-    final className = m.group(1)!;
-    final code = classToCode[className];
-    if (code == null) {
-      stderr.writeln('Unable to find lint code for class $className');
-      exit(1);
-    }
-    ids.add(code);
-  }
-  return ids;
-}
-
-Map<String, String> _loadSeverityMap() {
-  final template = File('analysis_options.yaml.template').readAsStringSync();
-  final regex = RegExp(r'^\s*([a-z0-9_]+)\s*:\s*(error|warning|info)\s*$', multiLine: true);
-  final map = <String, String>{};
-  for (final match in regex.allMatches(template)) {
-    map[match.group(1)!] = match.group(2)!;
-  }
-  return map;
-}
-
-String _replaceSection(String content, String marker, String replacement) {
+String replaceSection(String content, String marker, String replacement) {
   final startTag = '<!-- $marker -->';
   final endTag = '<!-- END $marker -->';
-  final startIndex = content.indexOf(startTag);
-  if (startIndex == -1) {
-    // An optional presentation block the README chose not to render. The catalogue
-    // integrity check (every registered rule has metadata) is the real guarantee;
-    // a missing display block is not a reason to fail the build.
-    return content;
+  if (startTag.allMatches(content).length != 1 ||
+      endTag.allMatches(content).length != 1) {
+    throw FormatException(
+      'Expected exactly one opening and closing marker: $marker',
+    );
   }
-  final endIndex = content.indexOf(endTag, startIndex);
-  if (endIndex == -1) {
-    stderr.writeln('End tag $endTag not found in README.md');
-    exit(1);
-  }
-  final before = content.substring(0, startIndex + startTag.length);
-  final after = content.substring(endIndex);
-  final trimmedReplacement = replacement.trim();
-  return '$before\n$trimmedReplacement\n$after';
-}
-
-/// Package name from pubspec, so the plugin entrypoint is not hardcoded.
-/// The public export renames the package, and this keeps the tool working there.
-String _packageName() {
-  final pubspec = File('pubspec.yaml').readAsStringSync();
-  final match = RegExp(r'^name:\s*(\S+)', multiLine: true).firstMatch(pubspec);
-  if (match == null) {
-    stderr.writeln('Unable to read package name from pubspec.yaml');
-    exit(1);
-  }
-  return match.group(1)!;
+  final start = content.indexOf(startTag);
+  final end = content.indexOf(endTag, start);
+  if (end < start) throw FormatException('Reversed markers: $marker');
+  return '${content.substring(0, start + startTag.length)}\n$replacement\n${content.substring(end)}';
 }

@@ -1,3 +1,7 @@
+<!-- example-scope: isolated top_level_screens_must_use_base_contract -->
+
+> **Example contract: `top_level_screens_must_use_base_contract` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # top_level_screens_must_use_base_contract
 
 **Severidad**: `warning`

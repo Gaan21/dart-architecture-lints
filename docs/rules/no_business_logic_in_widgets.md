@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_business_logic_in_widgets -->
+
+> **Example contract: `no_business_logic_in_widgets` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # no_business_logic_in_widgets
 
 **Severidad**: `warning`

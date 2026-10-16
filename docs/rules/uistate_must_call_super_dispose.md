@@ -1,3 +1,7 @@
+<!-- example-scope: isolated uistate_must_call_super_dispose -->
+
+> **Example contract: `uistate_must_call_super_dispose` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # uistate_must_call_super_dispose
 
 **Nivel**: CRÍTICO | **Tipo**: State Management | **Área**: UiState Lifecycle
@@ -84,4 +88,3 @@ class DetailUiState extends BaseUiState {
 - Si un UiState no hereda de `ChangeNotifier` (patrón no recomendado), la regla no se activa.
 
 ## Recursos
-

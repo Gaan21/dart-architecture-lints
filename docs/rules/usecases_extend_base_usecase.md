@@ -1,3 +1,7 @@
+<!-- example-scope: isolated usecases_extend_base_usecase -->
+
+> **Example contract: `usecases_extend_base_usecase` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # usecases_extend_base_usecase
 
 **Rule name**: `usecases_extend_base_usecase`

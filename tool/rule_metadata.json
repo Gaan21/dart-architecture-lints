@@ -17,7 +17,7 @@
   {
     "id": "method_order",
     "section": "Code Organization Rules",
-    "description": "Enforce method order: @override → public → private"
+    "description": "Enforce method order: getters/setters → @override → public → private"
   },
   {
     "id": "variable_name_should_contain_class_name",
@@ -33,11 +33,6 @@
     "id": "avoid_hardcoded_strings",
     "section": "Flutter-Specific Rules",
     "description": "Detect hardcoded UI strings, suggest i18n"
-  },
-  {
-    "id": "check_context_mounted",
-    "section": "Flutter-Specific Rules",
-    "description": "Verify BuildContext mounted check after async operations"
   },
   {
     "id": "viewmodels_no_buildcontext",
@@ -68,11 +63,6 @@
     "id": "viewmodels_no_flutter_types",
     "section": "Architecture & Patterns Rules",
     "description": "Prevent Flutter types in ViewModels (use UiState)"
-  },
-  {
-    "id": "screens_must_be_stateless",
-    "section": "Architecture & Patterns Rules",
-    "description": "Enforce StatelessWidget for Screen classes"
   },
   {
     "id": "domain_entities_must_use_freezed",
@@ -112,7 +102,7 @@
   {
     "id": "require_explicit_types",
     "section": "Architecture & Patterns Rules",
-    "description": "Enforce explicit type annotations on all variables (no type inference)"
+    "description": "Require explicit types using strict (legacy) or selective boundary policy"
   },
   {
     "id": "datasources_return_result",
@@ -171,7 +161,7 @@
   {
     "id": "logger_context_matches_scope",
     "section": "Development & Testing Rules",
-    "description": "Ensure AppLoggerService.error/warning context matches enclosing scope (rename-safe)"
+    "description": "Match configured logger context to its enclosing scope"
   },
   {
     "id": "no_device_local_in_presentation",

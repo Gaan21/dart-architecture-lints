@@ -1,3 +1,7 @@
+<!-- example-scope: isolated logger_context_must_be_structured -->
+
+> **Example contract: `logger_context_must_be_structured` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # logger_context_must_be_structured
 
 **Rule name**: `logger_context_must_be_structured`
@@ -114,4 +118,3 @@ No hay excepciones formales para esta regla. Si un caso legítimo necesita conte
 | `module.submodule.action` | `"auth.token.refresh"` | Flujos con múltiples pasos |
 
 ## Guideline relacionada
-

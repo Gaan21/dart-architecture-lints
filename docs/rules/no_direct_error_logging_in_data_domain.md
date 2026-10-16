@@ -1,3 +1,7 @@
+<!-- example-scope: isolated no_direct_error_logging_in_data_domain -->
+
+> **Example contract: `no_direct_error_logging_in_data_domain` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # no_direct_error_logging_in_data_domain
 
 **Rule name**: `no_direct_error_logging_in_data_domain`
@@ -115,4 +119,3 @@ Para añadir un archivo al allowlist:
 - [ ] Ejecutar `dart run custom_lint` para verificar 0 violaciones
 
 ## Guideline relacionada
-
