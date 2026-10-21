@@ -89,6 +89,10 @@ approved-wrapper configuration and glob filtering. Full options in
 
 ## The rule set
 
+Maintainers: [deferred guidance alignment](docs/deferred-guidance-alignment.md)
+records future review candidates and required bidirectional guidance/lint impact
+review. These proposals do not change current diagnostics or consumer selections.
+
 See [selectable contracts and exact configuration syntax](docs/configuration.md).
 The generated [architecture sample](profiles/architecture.yaml) selects 48 of 51
 rules with selective typing. Only the approved blanket language restrictions
