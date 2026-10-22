@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed WorkTracker `// ignore-reason:` convention for the unawaited rules. Disable outside WorkTracker.
+
 ## What it detects
 
 `// ignore:` comments listing `avoid_unawaited`, `avoid_async_in_provider_create` or `avoid_async_wrapper_hides_unawaited`, without a `// ignore-reason: <non-empty reason>` comment on the same or the preceding line.
@@ -31,7 +33,7 @@ unawaited(legacy.run());
 
 ## Disable if
 
-You disabled the three unawaited rules, or you track suppressions another way.
+In any project outside WorkTracker that does not adopt the same convention. You disabled the three unawaited rules, or you track suppressions another way.
 
 ## Options
 

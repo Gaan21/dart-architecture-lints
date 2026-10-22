@@ -3,312 +3,381 @@
     "id": "enforce_final_variables",
     "section": "Core Language Rules",
     "detects": "Local `var` bindings that are never reassigned",
-    "disable_if": "Your style prefers `var` for locals regardless of reassignment"
+    "disable_if": "Your style prefers `var` for locals regardless of reassignment",
+    "worktracker_specific": false
   },
   {
     "id": "no_late_keyword",
     "section": "Core Language Rules",
     "detects": "`late` variables, except `late final` dependency-injection holders",
-    "disable_if": "Your team accepts `late` with reviewed initialization guarantees"
+    "disable_if": "Your team accepts `late` with reviewed initialization guarantees",
+    "worktracker_specific": false
   },
   {
     "id": "no_bang_operator",
     "section": "Core Language Rules",
     "detects": "Every postfix null assertion `!`",
-    "disable_if": "The project accepts `!` after reviewed nullability guarantees"
+    "disable_if": "The project accepts `!` after reviewed nullability guarantees",
+    "worktracker_specific": false
   },
   {
     "id": "method_order",
     "section": "Code Organization Rules",
     "detects": "Class methods out of order: getters/setters, `@override`, public, private",
-    "disable_if": "Your style guide uses a different member order"
+    "disable_if": "Your style guide uses a different member order",
+    "worktracker_specific": false
   },
   {
     "id": "variable_name_should_contain_class_name",
     "section": "Code Organization Rules",
     "detects": "Variables of a class type whose name does not contain the class name",
-    "disable_if": "Your naming convention allows short or role-only names"
+    "disable_if": "Your naming convention allows short or role-only names",
+    "worktracker_specific": false
   },
   {
     "id": "one_class_per_file",
     "section": "Code Organization Rules",
     "detects": "More than one public class, enum or mixin per file",
-    "disable_if": "Your style allows cohesive type families in one file"
+    "disable_if": "Your style allows cohesive type families in one file",
+    "worktracker_specific": false
   },
   {
     "id": "avoid_hardcoded_strings",
     "section": "Flutter-Specific Rules",
     "detects": "String literals in presentation and use-case files that look like user-facing text",
-    "disable_if": "The project does not localize, or localizes outside these layers"
+    "disable_if": "The project does not localize, or localizes outside these layers",
+    "worktracker_specific": false
   },
   {
     "id": "viewmodels_no_buildcontext",
     "section": "Flutter-Specific Rules",
     "detects": "`BuildContext` fields or constructor parameters in view models",
-    "disable_if": "Never in MVVM code; only if view models intentionally own UI context"
+    "disable_if": "Never in MVVM code; only if view models intentionally own UI context",
+    "worktracker_specific": false
   },
   {
     "id": "usecases_follow_pattern",
     "section": "Architecture & Patterns Rules",
     "detects": "Concrete `*UseCase` classes without their own `execute()` returning `Result`",
-    "disable_if": "Your use cases use another entry point (`call`, a command object)"
+    "disable_if": "Your use cases use another entry point (`call`, a command object)",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed WorkTracker use-case entry point `execute()` returning `Result`"
   },
   {
     "id": "viewmodels_call_super_dispose",
     "section": "Architecture & Patterns Rules",
     "detects": "`dispose()` in view-model-like classes that never calls `super.dispose()`",
-    "disable_if": "Never for `ChangeNotifier`-based view models"
+    "disable_if": "Never for `ChangeNotifier`-based view models",
+    "worktracker_specific": false
   },
   {
     "id": "no_external_dependencies_in_domain",
     "section": "Architecture & Patterns Rules",
     "detects": "Imports of framework, network, storage, platform or state packages in domain files",
-    "disable_if": "Your domain layer deliberately depends on one of these packages"
+    "disable_if": "Your domain layer deliberately depends on one of these packages",
+    "worktracker_specific": false
   },
   {
     "id": "no_result_throw",
     "section": "Architecture & Patterns Rules",
     "detects": "`throw`/`rethrow` that can escape use-case or repository methods",
-    "disable_if": "Your use cases/repositories intentionally propagate exceptions"
+    "disable_if": "Your use cases/repositories intentionally propagate exceptions",
+    "worktracker_specific": false
   },
   {
     "id": "viewmodels_no_flutter_types",
     "section": "Architecture & Patterns Rules",
     "detects": "Flutter UI types declared as fields of `*ViewModel*` classes",
-    "disable_if": "Your view models deliberately hold Flutter UI objects"
+    "disable_if": "Your view models deliberately hold Flutter UI objects",
+    "worktracker_specific": false
   },
   {
     "id": "domain_entities_must_use_freezed",
     "section": "Architecture & Patterns Rules",
     "detects": "Concrete public domain entity/value-object classes without `@freezed`",
-    "disable_if": "The project does not use Freezed for domain values"
+    "disable_if": "The project does not use Freezed for domain values",
+    "worktracker_specific": true,
+    "worktracker_reason": "requires the Freezed generator that WorkTracker adopted for domain values"
   },
   {
     "id": "domain_values_shallow_immutable",
     "section": "Architecture & Patterns Rules",
     "detects": "Mutable instance fields and public setters in domain entities/value objects",
-    "disable_if": "Your domain values are deliberately mutable"
+    "disable_if": "Your domain values are deliberately mutable",
+    "worktracker_specific": false
   },
   {
     "id": "no_serialization_in_entities",
     "section": "Architecture & Patterns Rules",
     "detects": "`fromJson`/`toJson` members or JSON annotations on domain entities/value objects",
-    "disable_if": "Your domain types intentionally double as wire models"
+    "disable_if": "Your domain types intentionally double as wire models",
+    "worktracker_specific": false
   },
   {
     "id": "models_must_have_json_serialization",
     "section": "Architecture & Patterns Rules",
     "detects": "Data models without `fromJson` + `toJson` or a JSON/Freezed annotation",
-    "disable_if": "Your models use another codec, or some models are not serialized"
+    "disable_if": "Your models use another codec, or some models are not serialized",
+    "worktracker_specific": false
   },
   {
     "id": "usecases_extend_base_usecase",
     "section": "Architecture & Patterns Rules",
     "detects": "Concrete `*UseCase` classes under `/domain/useCases/` not extending `BaseUseCase`",
-    "disable_if": "Your use cases do not share a `BaseUseCase`"
+    "disable_if": "Your use cases do not share a `BaseUseCase`",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed `BaseUseCase` base class and `/domain/useCases/` folder"
   },
   {
     "id": "viewmodels_extend_base_viewmodel",
     "section": "Architecture & Patterns Rules",
     "detects": "Concrete `*ViewModel` classes under `/presentation/viewModels/` not extending a base view model",
-    "disable_if": "Your view models do not share `BaseViewModel`"
+    "disable_if": "Your view models do not share `BaseViewModel`",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed `BaseViewModel`/`BaseViewModelWithEffects` base classes and `/presentation/viewModels/` folder"
   },
   {
     "id": "repository_methods_return_result",
     "section": "Architecture & Patterns Rules",
     "detects": "Public repository operations not returning `Result` (sync, Future, FutureOr or Stream)",
-    "disable_if": "Your repositories use another failure protocol"
+    "disable_if": "Your repositories use another failure protocol",
+    "worktracker_specific": false
   },
   {
     "id": "streamcontroller_must_close",
     "section": "Architecture & Patterns Rules",
     "detects": "Owned `StreamController` fields not closed on every normal `dispose` exit",
-    "disable_if": "Never for owned controllers; review borrowed ones instead"
+    "disable_if": "Never for owned controllers; review borrowed ones instead",
+    "worktracker_specific": false
   },
   {
     "id": "require_explicit_types",
     "section": "Architecture & Patterns Rules",
     "detects": "Missing type annotations (strict: fields, locals, loops; selective: public boundaries)",
-    "disable_if": "Your style relies on type inference"
+    "disable_if": "Your style relies on type inference",
+    "worktracker_specific": false
   },
   {
     "id": "datasources_return_result",
     "section": "Architecture & Patterns Rules",
     "detects": "Public data-source operations, including interface declarations, not returning `Result`",
-    "disable_if": "Your data sources throw and repositories convert failures"
+    "disable_if": "Your data sources throw and repositories convert failures",
+    "worktracker_specific": false
   },
   {
     "id": "no_business_logic_in_widgets",
     "section": "Architecture & Patterns Rules",
     "detects": "Use-case/repository construction, `*UseCase.execute()` and complex filters in widget methods",
-    "disable_if": "Your widgets intentionally hold presentation logic beyond rendering"
+    "disable_if": "Your widgets intentionally hold presentation logic beyond rendering",
+    "worktracker_specific": false
   },
   {
     "id": "no_static_map_controllers",
     "section": "State Management & Lifecycle Rules",
     "detects": "Static `Map` fields whose value type is a lifecycle resource",
-    "disable_if": "Never in Flutter UI code; only if no such caches exist"
+    "disable_if": "Never in Flutter UI code; only if no such caches exist",
+    "worktracker_specific": false
   },
   {
     "id": "mixin_no_state_ownership",
     "section": "State Management & Lifecycle Rules",
     "detects": "Mixin fields whose type is a lifecycle resource (controllers, timers, focus nodes)",
-    "disable_if": "Your mixins deliberately own and dispose resources"
+    "disable_if": "Your mixins deliberately own and dispose resources",
+    "worktracker_specific": false
   },
   {
     "id": "uistate_must_call_super_dispose",
     "section": "State Management & Lifecycle Rules",
     "detects": "`dispose()` in UI-state classes that never calls `super.dispose()`",
-    "disable_if": "Never for `ChangeNotifier`-based UI state"
+    "disable_if": "Never for `ChangeNotifier`-based UI state",
+    "worktracker_specific": false
   },
   {
     "id": "multiprovider_order",
     "section": "State Management & Lifecycle Rules",
     "detects": "`*UiState` providers listed after `*ViewModel` providers in `MultiProvider`",
-    "disable_if": "Your composition does not follow the UiState-before-ViewModel naming contract"
+    "disable_if": "Your composition does not follow the UiState-before-ViewModel naming contract",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed WorkTracker `*UiState` before `*ViewModel` provider naming contract"
   },
   {
     "id": "no_local_datetime_constructors",
     "section": "Development & Testing Rules",
     "detects": "`DateTime.now()`, local `DateTime(...)`, non-UTC epoch and unconverted `parse`",
-    "disable_if": "Your project accepts device-local clocks and dates throughout"
+    "disable_if": "Your project accepts device-local clocks and dates throughout",
+    "worktracker_specific": false
   },
   {
     "id": "no_direct_internet_calls",
     "section": "Development & Testing Rules",
     "detects": "HTTP client construction/calls and connectivity checks outside network service files",
-    "disable_if": "Your app has no central network service"
+    "disable_if": "Your app has no central network service",
+    "worktracker_specific": false
   },
   {
     "id": "enforce_utc_dates",
     "section": "Development & Testing Rules",
     "detects": "Non-UTC `DateTime` construction or parsing in data-layer files",
-    "disable_if": "Data-layer timestamps are deliberately local or civil dates"
+    "disable_if": "Data-layer timestamps are deliberately local or civil dates",
+    "worktracker_specific": false
   },
   {
     "id": "require_keys_in_lists",
     "section": "Development & Testing Rules",
     "detects": "Keyless widgets returned directly by `ListView.builder`/`GridView.builder` item builders",
-    "disable_if": "Your lists are static or items never move"
+    "disable_if": "Your lists are static or items never move",
+    "worktracker_specific": false
   },
   {
     "id": "logger_context_matches_scope",
     "section": "Development & Testing Rules",
     "detects": "Literal log `context:` values that differ from `Type.member` of the enclosing member",
-    "disable_if": "Your log context is not a `Type.member` string"
+    "disable_if": "Your log context is not a `Type.member` string",
+    "worktracker_specific": false
   },
   {
     "id": "no_device_local_in_presentation",
     "section": "Timezone Safety Rules",
     "detects": "`DateTime.toLocal()` calls in presentation files",
-    "disable_if": "Device-local time is the intended display zone for your app"
+    "disable_if": "Device-local time is the intended display zone for your app",
+    "worktracker_specific": true,
+    "worktracker_reason": "WorkTracker displays organization-zone time; ordinary apps legitimately show device-local time"
   },
   {
     "id": "no_civil_utc_mix_without_helper",
     "section": "Timezone Safety Rules",
     "detects": "Civil-date and UTC-instant values combined in one risky expression without an approved helper",
-    "disable_if": "Your code has no separate civil-date values, or no such mapping folders"
+    "disable_if": "Your code has no separate civil-date values, or no such mapping folders",
+    "worktracker_specific": true,
+    "worktracker_reason": "WorkTracker civil-date/UTC contract with approved normalization helpers and Spanish/English name signals"
   },
   {
     "id": "no_utc_time_format_without_empresa_helper",
     "section": "Timezone Safety Rules",
     "detects": "Time-pattern formatting of a value not wrapped by an approved company-time helper",
-    "disable_if": "Your app displays times in UTC or the device zone by design"
+    "disable_if": "Your app displays times in UTC or the device zone by design",
+    "worktracker_specific": true,
+    "worktracker_reason": "default approved helpers are WorkTracker's `empresa` time wrappers"
   },
   {
     "id": "avoid_unawaited",
     "section": "Async & Concurrency Rules",
     "detects": "`unawaited(...)` without a valid `// unawaited-ok: <category> - <reason>` comment",
-    "disable_if": "Your team does not require justification for fire-and-forget futures"
+    "disable_if": "Your team does not require justification for fire-and-forget futures",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed WorkTracker `// unawaited-ok: <category> - <reason>` comment format and categories"
   },
   {
     "id": "avoid_unawaited_ignore_without_reason",
     "section": "Async & Concurrency Rules",
     "detects": "`// ignore:` of the unawaited rules without `// ignore-reason: <reason>`",
-    "disable_if": "You disabled the unawaited-governance rules"
+    "disable_if": "You disabled the unawaited-governance rules",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed WorkTracker `// ignore-reason:` convention for the unawaited rules"
   },
   {
     "id": "avoid_async_in_provider_create",
     "section": "Async & Concurrency Rules",
     "detects": "`unawaited(...)` directly inside a Provider `create`/`update` closure",
-    "disable_if": "Your provider setup never starts async work in `create`"
+    "disable_if": "Your provider setup never starts async work in `create`",
+    "worktracker_specific": false
   },
   {
     "id": "avoid_async_wrapper_hides_unawaited",
     "section": "Async & Concurrency Rules",
     "detects": "Single-`await` async callbacks in `scheduleMicrotask`, `Timer.run` or `Future(...)`",
-    "disable_if": "You do not use the unawaited-governance rules"
+    "disable_if": "You do not use the unawaited-governance rules",
+    "worktracker_specific": true,
+    "worktracker_reason": "guards the WorkTracker `avoid_unawaited` convention against single-await wrappers"
   },
   {
     "id": "no_direct_error_logging_in_data_domain",
     "section": "Logging & Error Governance",
     "detects": "`error`/`warning` calls on `*LoggerService` in data/domain files",
-    "disable_if": "Your data/domain layers own their error reporting"
+    "disable_if": "Your data/domain layers own their error reporting",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed allowlist of WorkTracker file paths (guard mixin, base use case, reporter and logger services) and `*LoggerService` receivers"
   },
   {
     "id": "logger_context_must_be_structured",
     "section": "Logging & Error Governance",
     "detects": "`warning`/`error`/`critical` logger calls without a structured literal `context`",
-    "disable_if": "Your logger has no context argument or uses another format"
+    "disable_if": "Your logger has no context argument or uses another format",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed `*LoggerService` logging API with a required `context:` argument"
   },
   {
     "id": "no_sensitive_data_in_log_metadata",
     "section": "Logging & Error Governance",
     "detects": "Credential keys in log metadata and credential patterns in log messages",
-    "disable_if": "Never while logs may persist; only if no such logger exists"
+    "disable_if": "Never while logs may persist; only if no such logger exists",
+    "worktracker_specific": false
   },
   {
     "id": "no_raw_exception_message_to_user",
     "section": "Logging & Error Governance",
     "detects": "Raw exception messages (`error.message`, `e.toString()`) passed to UI text and dialogs",
-    "disable_if": "Your UI shows backend messages verbatim by design"
+    "disable_if": "Your UI shows backend messages verbatim by design",
+    "worktracker_specific": false
   },
   {
     "id": "no_exception_message_passthrough",
     "section": "Logging & Error Governance",
     "detects": "Raw exception/backend messages forwarded through `??`, message-like arguments or exception constructors",
-    "disable_if": "Your layers intentionally forward backend messages as user copy"
+    "disable_if": "Your layers intentionally forward backend messages as user copy",
+    "worktracker_specific": false
   },
   {
     "id": "app_exception_must_define_code",
     "section": "Logging & Error Governance",
     "detects": "`AppException` subclasses without a `code`, and string-literal `code:` arguments",
-    "disable_if": "The project has no `AppException` type with stable codes"
+    "disable_if": "The project has no `AppException` type with stable codes",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed `AppException` base with stable i18n code constants"
   },
   {
     "id": "avoid_scattered_401_handling",
     "section": "Architecture & Patterns Rules",
     "detects": "`statusCode == 401` comparisons outside `AuthInterceptor`/`AuthService`",
-    "disable_if": "Your auth boundary uses other class names or 401 handling is legitimately local"
+    "disable_if": "Your auth boundary uses other class names or 401 handling is legitimately local",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed allowed class names `AuthInterceptor` and `AuthService`"
   },
   {
     "id": "top_level_screens_must_use_base_contract",
     "section": "Architecture & Patterns Rules",
     "detects": "`*Screen` widgets built by top-level routes that do not extend a `Base*Screen`",
-    "disable_if": "Your project has no base-screen contract (the rule is then inactive)"
+    "disable_if": "Your project has no base-screen contract (the rule is then inactive)",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed `Base*Screen` convention under `screens/base/` and fixed exempt WorkTracker screen names"
   },
   {
     "id": "no_domain_entities_in_presentation_ui",
     "section": "Architecture & Patterns Rules",
     "detects": "Imports of `package:<app>/domain/entities` in screens and widgets",
-    "disable_if": "The project lets UI consume domain entities directly"
+    "disable_if": "The project lets UI consume domain entities directly",
+    "worktracker_specific": false
   },
   {
     "id": "no_hardcoded_color_literal",
     "section": "Design Token Rules",
     "detects": "`Color(0x...)` hex literals in presentation files",
-    "disable_if": "The project has no color tokens or theme color scheme"
+    "disable_if": "The project has no color tokens or theme color scheme",
+    "worktracker_specific": false
   },
   {
     "id": "no_hardcoded_border_radius",
     "section": "Design Token Rules",
     "detects": "`BorderRadius.circular` with literal 6, 12 or 16 (values with a spacing token)",
-    "disable_if": "The project has no `AppSpacing` radius tokens"
+    "disable_if": "The project has no `AppSpacing` radius tokens",
+    "worktracker_specific": true,
+    "worktracker_reason": "fixed WorkTracker radius values (6, 12, 16) and `AppSpacing` token names"
   },
   {
     "id": "overlay_lifecycle_context_safety",
     "section": "State Management & Lifecycle Rules",
     "detects": "Overlay builders that capture a caller-owned controller or use the caller's `BuildContext`",
-    "disable_if": "Never in Flutter UI code"
+    "disable_if": "Never in Flutter UI code",
+    "worktracker_specific": false
   }
 ]

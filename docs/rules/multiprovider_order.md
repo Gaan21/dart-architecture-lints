@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed WorkTracker `*UiState` before `*ViewModel` provider naming contract. Disable outside WorkTracker.
+
 ## What it detects
 
 In a direct `providers:` list literal of `MultiProvider`, a provider whose role is `UiState` after one whose role is `ViewModel`. The role comes from the first type argument (`ChangeNotifierProvider<SearchUiState>`) or the type created/returned in `create`, by the name suffix `UiState` or `ViewModel`.
@@ -34,7 +36,7 @@ MultiProvider(providers: [
 
 ## Disable if
 
-Your project uses a different composition model or naming, or does not use `provider`.
+In any project outside WorkTracker that does not adopt the same convention. Your project uses a different composition model or naming, or does not use `provider`.
 
 ## Options
 

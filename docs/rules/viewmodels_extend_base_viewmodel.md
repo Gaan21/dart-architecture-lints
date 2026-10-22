@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed `BaseViewModel`/`BaseViewModelWithEffects` base classes and `/presentation/viewModels/` folder. Disable outside WorkTracker.
+
 ## What it detects
 
 Concrete public classes whose name ends with `ViewModel`, in files whose URI path contains `/presentation/viewModels/`, whose direct superclass is not `BaseViewModel` or `BaseViewModelWithEffects`.
@@ -28,7 +30,7 @@ class ProfileViewModel extends BaseViewModel<Profile> {}
 
 ## Disable if
 
-Your project has no base view model, or uses another state-management base.
+In any project outside WorkTracker that does not adopt the same convention. Your project has no base view model, or uses another state-management base.
 
 ## Options
 

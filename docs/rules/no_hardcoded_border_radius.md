@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed WorkTracker radius values (6, 12, 16) and `AppSpacing` token names. Disable outside WorkTracker.
+
 ## What it detects
 
 `BorderRadius.circular` calls with a single integer literal `6`, `12` or `16` in files matching the include globs and not the exclude globs. The message names `AppSpacing.radiusSm`, `radiusMd` or `radiusLg` respectively.
@@ -28,7 +30,7 @@ BorderRadius.circular(AppSpacing.radiusMd)
 
 ## Disable if
 
-Your project has no `AppSpacing` radius tokens or uses other token values.
+In any project outside WorkTracker that does not adopt the same convention. Your project has no `AppSpacing` radius tokens or uses other token values.
 
 ## Options
 

@@ -21,7 +21,7 @@ class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
         'Sin code, la capa de presentación no puede localizar el mensaje de error.',
     correctionMessage:
         'Añade un campo "code" o pásalo al super constructor.\n'
-        'Además, evita literales crudos (ej: code: \'fichaje_failed\').\n'
+        'Además, evita literales crudos (ej: code: \'save_failed\').\n'
         'Usa constantes estables (ej: I18nCodes.widgetGenericError).\n'
         'Ejemplo:\n'
         '  class NotFoundAppException extends AppException {\n'
@@ -62,8 +62,10 @@ class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
     });
 
     // Extra safety: reject raw string literals used as code in AppException
-    // instantiations (e.g. code: 'fichaje_failed').
-    context.registry.addInstanceCreationExpression((InstanceCreationExpression node) {
+    // instantiations (e.g. code: 'save_failed').
+    context.registry.addInstanceCreationExpression((
+      InstanceCreationExpression node,
+    ) {
       if (!_isAppExceptionInstance(node)) return;
       final NamedExpression? codeArg = _findNamedArg(node.argumentList, 'code');
       if (codeArg == null) return;

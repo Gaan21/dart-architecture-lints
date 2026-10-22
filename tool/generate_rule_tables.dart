@@ -21,15 +21,42 @@ Map<String, LintRule> registeredRules() {
 /// Metadata fields every rule must provide, each a single non-empty line.
 const metadataFields = ['id', 'section', 'detects', 'disable_if'];
 
+/// Classification fields: `worktracker_specific` (bool) and, only when true, a
+/// one-line `worktracker_reason` naming what is fixed to WorkTracker.
+const classificationFields = ['worktracker_specific', 'worktracker_reason'];
+
 /// Reads `tool/rule_metadata.json` and requires exact registration membership.
-List<Map<String, String>> readMetadata(Map<String, LintRule> rules) {
-  final raw = jsonDecode(File('tool/rule_metadata.json').readAsStringSync());
+///
+/// Each returned entry has the string fields plus `worktracker_reason`, which
+/// is empty for rules that are not WorkTracker-specific.
+List<Map<String, String>> readMetadata(
+  Map<String, LintRule> rules, [
+  Object? decoded,
+]) {
+  final raw =
+      decoded ?? jsonDecode(File('tool/rule_metadata.json').readAsStringSync());
   final metadata = <Map<String, String>>[];
   for (final entry in (raw as List).cast<Map<String, dynamic>>()) {
-    if (entry.keys.toSet().difference(metadataFields.toSet()).isNotEmpty) {
+    final known = {...metadataFields, ...classificationFields};
+    if (entry.keys.toSet().difference(known).isNotEmpty) {
       throw FormatException('Unknown metadata keys: ${entry.keys}');
     }
-    for (final field in metadataFields) {
+    final specific = entry['worktracker_specific'];
+    if (specific is! bool) {
+      throw FormatException(
+        '${entry['id']}: "worktracker_specific" must be a bool',
+      );
+    }
+    if (specific != entry.containsKey('worktracker_reason')) {
+      throw FormatException(
+        '${entry['id']}: "worktracker_reason" is required exactly when '
+        '"worktracker_specific" is true',
+      );
+    }
+    for (final field in [
+      ...metadataFields,
+      if (specific) 'worktracker_reason',
+    ]) {
       final value = entry[field];
       if (value is! String || value.trim().isEmpty || value.contains('\n')) {
         throw FormatException('${entry['id']}: "$field" must be one line');
@@ -38,7 +65,12 @@ List<Map<String, String>> readMetadata(Map<String, LintRule> rules) {
         throw FormatException('${entry['id']}: "$field" must not contain |');
       }
     }
-    metadata.add(entry.cast<String, String>());
+    metadata.add({
+      for (final field in metadataFields) field: entry[field] as String,
+      'worktracker_reason': specific
+          ? entry['worktracker_reason'] as String
+          : '',
+    });
   }
   final ids = metadata.map((entry) => entry['id']!).toSet();
   if (ids.length != metadata.length ||
@@ -53,6 +85,25 @@ List<Map<String, String>> readMetadata(Map<String, LintRule> rules) {
   return metadata;
 }
 
+/// Copy-paste YAML that disables every WorkTracker-specific rule at once.
+String worktrackerDisableYaml(List<Map<String, String>> metadata) {
+  final ids = [
+    for (final entry in metadata)
+      if (entry['worktracker_reason']!.isNotEmpty) entry['id']!,
+  ]..sort();
+  return [
+    '```yaml',
+    'custom_lint:',
+    '  rules:',
+    for (final id in ids) '    - $id: false',
+    '```',
+  ].join('\n');
+}
+
+/// The rule-document line that marks a WorkTracker-specific rule.
+String worktrackerLine(String reason) =>
+    '**WorkTracker-specific**: $reason. Disable outside WorkTracker.';
+
 /// Required headings of every rule document, in order.
 const ruleDocHeadings = [
   '## What it detects',
@@ -63,8 +114,14 @@ const ruleDocHeadings = [
   '## Limits',
 ];
 
-/// Checks the uniform rule-document format against the live rule.
-void validateRuleDoc(String id, String text, LintRule rule) {
+/// Checks the uniform rule-document format against the live rule and, when
+/// [worktrackerReason] is non-empty, the WorkTracker-specific marking.
+void validateRuleDoc(
+  String id,
+  String text,
+  LintRule rule, {
+  String worktrackerReason = '',
+}) {
   final path = 'docs/rules/$id.md';
   if (!text.contains('\n# $id\n')) {
     throw FormatException('$path: missing "# $id" title');
@@ -80,6 +137,27 @@ void validateRuleDoc(String id, String text, LintRule rule) {
       throw FormatException('$path: missing or misordered $heading');
     }
     position = index + heading.length;
+  }
+  final marked = text.contains('**WorkTracker-specific**');
+  if (worktrackerReason.isEmpty) {
+    if (marked) {
+      throw FormatException('$path: not WorkTracker-specific in metadata');
+    }
+  } else {
+    if (!text.contains('\n${worktrackerLine(worktrackerReason)}\n')) {
+      throw FormatException(
+        '$path: needs the line "${worktrackerLine(worktrackerReason)}"',
+      );
+    }
+    final disableIf = text.substring(
+      text.indexOf('\n## Disable if\n'),
+      text.indexOf('\n## Options\n'),
+    );
+    if (!disableIf.contains('outside WorkTracker')) {
+      throw FormatException(
+        '$path: "Disable if" must mention outside WorkTracker',
+      );
+    }
   }
   if (const LineSplitter().convert(text).length > 120) {
     throw FormatException('$path: keep rule documents at most 120 lines');
@@ -127,8 +205,14 @@ Map<String, String> generatedFiles() {
     throw FormatException('Every rule must be enabled by default: $disabled');
   }
   final generated = <String, String>{...scopedRuleDocs(rules.keys)};
-  for (final id in rules.keys) {
-    validateRuleDoc(id, generated['docs/rules/$id.md']!, rules[id]!);
+  for (final entry in metadata) {
+    final id = entry['id']!;
+    validateRuleDoc(
+      id,
+      generated['docs/rules/$id.md']!,
+      rules[id]!,
+      worktrackerReason: entry['worktracker_reason']!,
+    );
   }
   var readme = File('README.md').readAsStringSync();
   readme = replaceSection(
@@ -143,13 +227,15 @@ Map<String, String> generatedFiles() {
   }
   for (final section in sections.entries) {
     final buffer = StringBuffer(
-      '| Rule | Detects | Disable if | Default severity |\n'
-      '|------|---------|------------|------------------|\n',
+      '| Rule | WorkTracker | Detects | Disable if | Default severity |\n'
+      '|------|-------------|---------|------------|------------------|\n',
     );
     for (final entry in section.value) {
       final id = entry['id']!;
       buffer.writeln(
-        '| [`$id`](docs/rules/$id.md) | ${entry['detects']} | '
+        '| [`$id`](docs/rules/$id.md) | '
+        '${entry['worktracker_reason']!.isEmpty ? '' : '⚠️ specific'} | '
+        '${entry['detects']} | '
         '${entry['disable_if']} | '
         '${rules[id]!.code.errorSeverity.name.toLowerCase()} |',
       );
@@ -160,6 +246,11 @@ Map<String, String> generatedFiles() {
       buffer.toString().trimRight(),
     );
   }
+  readme = replaceSection(
+    readme,
+    'AUTOGENERATED:WORKTRACKER_DISABLE',
+    worktrackerDisableYaml(metadata),
+  );
   generated['README.md'] = readme;
   generated['docs/example_coverage.md'] = exampleCoverage(rules.keys);
   return generated;

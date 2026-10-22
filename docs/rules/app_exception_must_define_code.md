@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed `AppException` base with stable i18n code constants. Disable outside WorkTracker.
+
 ## What it detects
 
 Two checks, outside `/test/`, `/integration_test/` and `*_test.dart` files: (1) concrete public classes that directly extend `AppException` without a `code` field, `code` getter, constructor parameter named `code` or `super(code: ...)` call; (2) a `code:` argument given as a string literal or interpolation when creating an `AppException` subtype, or any type whose name ends with `Exception` or `Failure`.
@@ -32,7 +34,7 @@ class NotFoundAppException extends AppException {
 
 ## Disable if
 
-Your error model does not use an `AppException` base with stable codes.
+In any project outside WorkTracker that does not adopt the same convention. Your error model does not use an `AppException` base with stable codes.
 
 ## Options
 

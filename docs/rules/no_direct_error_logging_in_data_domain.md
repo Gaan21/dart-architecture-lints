@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed allowlist of WorkTracker file paths (guard mixin, base use case, reporter and logger services) and `*LoggerService` receivers. Disable outside WorkTracker.
+
 ## What it detects
 
 In files whose path contains `/data/` or `/domain/`: `error(...)` or `warning(...)` calls whose target is an identifier or static type named `AppLoggerService`, `appLoggerService` or ending with `LoggerService`. Files ending with `core/mixins/guard_mixin.dart`, `domain/useCases/base_use_case.dart`, `core/services/error_reporter_service.dart` or `core/services/app_logger_service.dart` are allowed.
@@ -33,7 +35,7 @@ catch (error) {
 
 ## Disable if
 
-Your project has no central reporting boundary, or data/domain code is expected to log errors itself.
+In any project outside WorkTracker that does not adopt the same convention. Your project has no central reporting boundary, or data/domain code is expected to log errors itself.
 
 ## Options
 

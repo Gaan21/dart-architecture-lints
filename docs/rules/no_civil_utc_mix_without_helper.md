@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: WorkTracker civil-date/UTC contract with approved normalization helpers and Spanish/English name signals. Disable outside WorkTracker.
+
 ## What it detects
 
 In files matching the include globs (default mappers/formatters/adapters folders): binary expressions with `+`, `==`, `!=`, `<`, `<=`, `>`, `>=`, string interpolations with two or more parts, and calls to `compareTo`, `difference`, `isBefore`, `isAfter`, `isAtSameMomentAs`, `format`, `merge` or `combine`, where one side shows civil-date evidence and the other instant evidence. Evidence comes from names (`date`, `day`, `fecha`, `civil`... versus `timestamp`, `utc`, `time`, `epoch`, `hour`...), instant members (`toUtc`, `millisecondsSinceEpoch`, `hour`...), `DateTime` constructors and parsed literals. Calls inside an invocation matching `helper_whitelist` are skipped.
@@ -28,7 +30,7 @@ final bool sameDay = workday.date == TimeContract.normalizeCivilDate(entry.times
 
 ## Disable if
 
-Your mapping code has no civil-date concept, or naming in your code base produces too many false positives.
+In any project outside WorkTracker that does not adopt the same convention. Your mapping code has no civil-date concept, or naming in your code base produces too many false positives.
 
 ## Options
 

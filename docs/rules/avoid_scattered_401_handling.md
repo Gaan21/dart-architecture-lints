@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed allowed class names `AuthInterceptor` and `AuthService`. Disable outside WorkTracker.
+
 ## What it detects
 
 Equality comparisons between an expression named `statusCode` (identifier, property or prefixed) and the integer literal `401`, in either order, outside classes named `AuthInterceptor` or `AuthService`. Files with `/test/` in their path are skipped.
@@ -32,7 +34,7 @@ class AuthInterceptor {
 
 ## Disable if
 
-Your central auth handler has a different class name, or the project has no centralized auth boundary.
+In any project outside WorkTracker that does not adopt the same convention. Your central auth handler has a different class name, or the project has no centralized auth boundary.
 
 ## Options
 

@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: requires the Freezed generator that WorkTracker adopted for domain values. Disable outside WorkTracker.
+
 ## What it detects
 
 Concrete (non-`abstract`), public classes in files whose URI path contains `/domain/entities/` or `/domain/value_objects/` without an annotation spelled `freezed` or `Freezed`.
@@ -34,7 +36,7 @@ class User with _$User {
 
 ## Disable if
 
-The project does not use Freezed for domain values (plain immutable classes or another generator). The rule does not read `pubspec.yaml`, so a dependency neither enables nor disables it.
+In any project outside WorkTracker that does not adopt the same convention. The project does not use Freezed for domain values (plain immutable classes or another generator). The rule does not read `pubspec.yaml`, so a dependency neither enables nor disables it.
 
 ## Options
 

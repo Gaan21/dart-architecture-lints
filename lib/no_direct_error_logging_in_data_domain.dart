@@ -56,11 +56,11 @@ class NoDirectErrorLoggingInDataDomainLint
     });
 
     // Also detect prefixed identifier access: e.g. AppLoggerService.error
-    context.registry.addFunctionExpressionInvocation(
-      (FunctionExpressionInvocation node) {
-        _checkFunctionExpressionInvocation(node, reporter);
-      },
-    );
+    context.registry.addFunctionExpressionInvocation((
+      FunctionExpressionInvocation node,
+    ) {
+      _checkFunctionExpressionInvocation(node, reporter);
+    });
   }
 
   void _checkMethodInvocation(
@@ -82,8 +82,8 @@ class NoDirectErrorLoggingInDataDomainLint
           name: 'no_direct_error_logging_in_data_domain',
           problemMessage:
               'Llamada directa a AppLoggerService.$level() en capa data/domain. '
-              'Los errores ya se centralizan en Guard/ErrorReporter (ver '
-              '06_LOGGING_GOVERNANCE.md §1); este log duplica la señal y genera '
+              'Los errores ya se centralizan en Guard/ErrorReporter; este log '
+              'duplica la señal y genera '
               'ruido en observabilidad.',
           correctionMessage:
               'Elimina esta llamada y devuelve Failure(...) para que el error '
@@ -117,8 +117,8 @@ class NoDirectErrorLoggingInDataDomainLint
           name: 'no_direct_error_logging_in_data_domain',
           problemMessage:
               'Llamada directa a AppLoggerService.$level() en capa data/domain. '
-              'Los errores ya se centralizan en Guard/ErrorReporter (ver '
-              '06_LOGGING_GOVERNANCE.md §1); este log duplica la señal y genera '
+              'Los errores ya se centralizan en Guard/ErrorReporter; este log '
+              'duplica la señal y genera '
               'ruido en observabilidad.',
           correctionMessage:
               'Elimina esta llamada y devuelve Failure(...) para que el error '
@@ -170,7 +170,8 @@ class NoDirectErrorLoggingInDataDomainLint
 
   bool _isAllowlisted(String filePath) {
     final normalized = filePath.replaceAll('\\', '/');
-    return _allowlistSuffixes
-        .any((suffix) => normalized.endsWith(suffix.replaceAll('\\', '/')));
+    return _allowlistSuffixes.any(
+      (suffix) => normalized.endsWith(suffix.replaceAll('\\', '/')),
+    );
   }
 }

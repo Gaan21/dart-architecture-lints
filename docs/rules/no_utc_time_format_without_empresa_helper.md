@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: default approved helpers are WorkTracker's `empresa` time wrappers. Disable outside WorkTracker.
+
 ## What it detects
 
 In files matching the include globs: `.format(x)` calls on a `DateFormat` time pattern (pattern with `H`, `h`, `k`, `K`, `j` or `J` outside quotes, `DateFormat.Hm/Hms/j/jm/jms/jmv/jmz/jmsvz`, variables initialized with one, or receivers whose name contains `time`, `hour`, `hora`, `hm`, `hms`, `heure`, `minute` or `clock`) where `x` is not an invocation matching `allowed_wrappers`, and is not a local variable whose last declaration/assignment in an enclosing block of the same function used an approved wrapper.
@@ -28,7 +30,7 @@ Text(DateFormat('HH:mm').format(movement.timestampUtc.toEmpresaLocalTime(tz)))
 
 ## Disable if
 
-Your product shows times in UTC or device-local time intentionally.
+In any project outside WorkTracker that does not adopt the same convention. Your product shows times in UTC or device-local time intentionally.
 
 ## Options
 

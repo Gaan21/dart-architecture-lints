@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: guards the WorkTracker `avoid_unawaited` convention against single-await wrappers. Disable outside WorkTracker.
+
 ## What it detects
 
 `scheduleMicrotask(...)`, `Timer.run(...)` and unnamed `Future(...)` calls whose only argument is an `async` block callback containing exactly one statement: `await expr;` or `return await expr;`.
@@ -31,7 +33,7 @@ unawaited(syncPending());
 
 ## Disable if
 
-You do not enforce `avoid_unawaited`, so there is nothing to bypass.
+In any project outside WorkTracker that does not adopt the same convention. You do not enforce `avoid_unawaited`, so there is nothing to bypass.
 
 ## Options
 

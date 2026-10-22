@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed `BaseUseCase` base class and `/domain/useCases/` folder. Disable outside WorkTracker.
+
 ## What it detects
 
 Concrete public classes whose name ends with `UseCase`, in files whose URI path contains `/domain/useCases/`, whose direct superclass is not spelled `BaseUseCase`.
@@ -33,7 +35,7 @@ class GetUserUseCase extends BaseUseCase<User, String> {
 
 ## Disable if
 
-Your project has no `BaseUseCase`, shares that behavior by composition, or has no use-case layer.
+In any project outside WorkTracker that does not adopt the same convention. Your project has no `BaseUseCase`, shares that behavior by composition, or has no use-case layer.
 
 ## Options
 

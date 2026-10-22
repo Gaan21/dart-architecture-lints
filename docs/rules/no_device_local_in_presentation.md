@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: WorkTracker displays organization-zone time; ordinary apps legitimately show device-local time. Disable outside WorkTracker.
+
 ## What it detects
 
 Calls to a method named `toLocal` with no arguments, in files matching the include globs and not the exclude globs, unless the receiver matches `allowed_receivers` or the call is inside an invocation matching `allowed_wrappers`.
@@ -28,7 +30,7 @@ Text(DateFormat.Hm().format(entry.startUtc.toEmpresaLocalTime(tz)))
 
 ## Disable if
 
-Your app intentionally displays times in the device zone.
+In any project outside WorkTracker that does not adopt the same convention. Your app intentionally displays times in the device zone.
 
 ## Options
 

@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed WorkTracker use-case entry point `execute()` returning `Result`. Disable outside WorkTracker.
+
 ## What it detects
 
 Concrete classes whose name ends with `UseCase` that do not declare a public `execute` method whose annotated return type is spelled `Result<...>` or `Future<Result<...>>`. Only the first `execute` method declared in the class is considered.
@@ -32,7 +34,7 @@ class GetUserUseCase {
 
 ## Disable if
 
-Your project names the entry point differently (for example `call`) or does not use a Result type.
+In any project outside WorkTracker that does not adopt the same convention. Your project names the entry point differently (for example `call`) or does not use a Result type.
 
 ## Options
 

@@ -61,6 +61,15 @@ custom_lint:
       project_package_name: shared_domain
 ```
 
+## WorkTracker-specific rules
+
+This package is maintained for WorkTracker. Rules marked ⚠️ in the README encode
+WorkTracker's own names or conventions; each document has a
+`**WorkTracker-specific**` line saying what is fixed. Outside WorkTracker, paste
+the README's generated "Using this outside WorkTracker" block. The classification
+lives in `tool/rule_metadata.json` and the generator rejects inconsistent
+metadata, documents or README output.
+
 ## Result outcome rules
 
 `repository_methods_return_result` and `datasources_return_result` share one
@@ -90,7 +99,8 @@ dart test
 ```
 
 The generator instantiates the actual plugin registrations, requires metadata
-(`id`, `section`, `detects`, `disable_if`) for exactly those rules, requires every
+(`id`, `section`, `detects`, `disable_if`, `worktracker_specific` and, when true,
+`worktracker_reason`) for exactly those rules, requires every
 rule to be enabled by default, and validates each rule document's headings and
 default severity. `--check` reports drift without writing. Registration and
 configuration coverage of all rules does not imply behavior coverage of all

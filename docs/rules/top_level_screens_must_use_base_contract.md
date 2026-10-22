@@ -6,6 +6,8 @@
 
 **Default severity**: info. Enabled by default.
 
+**WorkTracker-specific**: fixed `Base*Screen` convention under `screens/base/` and fixed exempt WorkTracker screen names. Disable outside WorkTracker.
+
 ## What it detects
 
 Only when the project `lib/` contains a Dart file under `screens/base/`. In `GoRoute` and `MaterialPageRoute` `builder`/`pageBuilder` arguments that are not inside a `StatefulShellBranch`, public `*Screen` instantiations or `.new` tear-offs whose class, found by a text scan of `lib/`, extends a class not named `Base...Screen`. `SplashScreen`, `LockScreen`, `AuthScreen`, `MainShellScreen` and `AccountInactiveScreen` are exempt.
@@ -30,7 +32,7 @@ GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen())
 
 ## Disable if
 
-You have a `screens/base/` folder but do not require top-level screens to extend it.
+In any project outside WorkTracker that does not adopt the same convention. You have a `screens/base/` folder but do not require top-level screens to extend it.
 
 ## Options
 

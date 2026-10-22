@@ -32,6 +32,16 @@ consumer; updating never edits a consumer's configuration.
   `Result` in data sources, typedef aliases of `Result` returns, `Stream`/`FutureOr`
   of `void`. Newly reported: repository `Stream`/`FutureOr` getters, data-source
   `FutureOr` getters and unannotated overrides inheriting a non-Result type.
+- **WorkTracker-specific rules marked.** 17 rules that depend on WorkTracker's own
+  names, paths, helpers, tokens or conventions are classified in
+  `tool/rule_metadata.json` (`worktracker_specific`, `worktracker_reason`), marked
+  ⚠️ in the README tables and in their documents, and listed in a generated
+  "Using this outside WorkTracker" YAML block that disables them all at once. They
+  stay enabled by default with unchanged detection; the generator enforces the
+  marking.
+- Diagnostic text no longer cites a private guidance file
+  (`no_direct_error_logging_in_data_domain`), and the `app_exception_must_define_code`
+  correction example uses a neutral code (`save_failed`).
 - **Generic defaults (behavior change: these rules now apply in any project).**
   `logger_context_matches_scope` now defaults to `include_globs: ["**/lib/**"]`
   instead of only paths containing `/work_tracker/lib/`.
