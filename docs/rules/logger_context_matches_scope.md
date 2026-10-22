@@ -40,10 +40,10 @@ Your logging API has no context argument or uses another context format.
 
 ## Options
 
-Sibling keys: `include_globs`, `exclude_globs`, `logger_names` (wildcards matching receiver names or resolved type names), `methods` (default `[error, warning]`) and `context_argument` (default `context`). Without `include_globs`, only paths containing `/work_tracker/lib/` are checked (historical default); without `logger_names`, receivers named `AppLoggerService`, `appLoggerService` or ending with `LoggerService` match. Example: `include_globs: ["**/lib/**"]`, `logger_names: ["Logger", "logger"]`. An empty list matches nothing.
+Sibling keys: `include_globs` (default `["**/lib/**"]`), `exclude_globs`, `logger_names` (wildcards matching receiver names or resolved type names; without it, receivers named `AppLoggerService`, `appLoggerService` or ending with `LoggerService` match), `methods` (default `[error, warning]`) and `context_argument` (default `context`). Example: `logger_names: ["Logger", "logger"]`. A provided list replaces its default; an empty list matches nothing.
 
 ## Limits
 
-- With default options the rule is effectively inactive outside that historical path; configure `include_globs`.
+- With default receiver names, loggers not named `*LoggerService` are ignored; set `logger_names` for other logging APIs.
 - Only literal contexts inside named methods and named constructors are checked; unnamed constructors and top-level functions are skipped.
 - It checks scope consistency, not whether logging is appropriate.

@@ -48,22 +48,17 @@ replaces its default; an empty list matches nothing.
 | [`no_hardcoded_color_literal`](rules/no_hardcoded_color_literal.md) | `include_globs`, `exclude_globs` |
 | [`no_hardcoded_border_radius`](rules/no_hardcoded_border_radius.md) | `include_globs`, `exclude_globs` |
 
-Two defaults are historical and match almost no other project; configure them:
-
-- `logger_context_matches_scope` checks only paths containing
-  `/work_tracker/lib/` unless `include_globs` is set, for example
-  `include_globs: ["**/lib/**"]` with `logger_names: ["Logger", "logger"]`.
-- `no_domain_entities_in_presentation_ui` uses `project_package_name: work_tracker`
-  unless set to your package name.
+Defaults are generic: `logger_context_matches_scope` checks `**/lib/**`, and
+`no_domain_entities_in_presentation_ui` checks imports of the analyzed package's
+own `domain/entities`. Override them only for a different layout or logging API:
 
 ```yaml
 custom_lint:
   rules:
     - logger_context_matches_scope: true
-      include_globs: ["**/lib/**"]
       logger_names: ["Logger", "logger"]
     - no_domain_entities_in_presentation_ui: true
-      project_package_name: my_app
+      project_package_name: shared_domain
 ```
 
 ## Result outcome rules

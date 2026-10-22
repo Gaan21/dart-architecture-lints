@@ -8,7 +8,7 @@
 
 ## What it detects
 
-Import directives whose URI is `package:<project_package_name>/domain/entities.dart` or starts with `package:<project_package_name>/domain/entities/`, in files matching `include_globs` and not `allowed_file_globs`.
+Import directives whose URI is `package:<package>/domain/entities.dart` or starts with `package:<package>/domain/entities/`, where `<package>` is the analyzed package (or `project_package_name`), in files matching `include_globs` and not `allowed_file_globs`.
 
 ## Why
 
@@ -32,9 +32,9 @@ Your UI uses domain entities directly by design.
 
 ## Options
 
-Sibling keys: `project_package_name` (default `work_tracker`; set it to your package name, otherwise nothing matches), `include_globs` (default `**/lib/presentation/screens/**`, `**/lib/presentation/widgets/**`) and `allowed_file_globs` (default `**/lib/presentation/**/*_ui_mapper.dart`).
+Sibling keys: `project_package_name` (default: the analyzed package's own name, taken from the library's `package:` URI or else the project's `pubspec.yaml`; set it to check another package name), `include_globs` (default `**/lib/presentation/screens/**`, `**/lib/presentation/widgets/**`) and `allowed_file_globs` (default `**/lib/presentation/**/*_ui_mapper.dart`).
 
 ## Limits
 
 - Only `package:` imports with the configured name; relative imports, exports and transitive use are not detected.
-- The historical default package name rarely matches a new project, so configure it.
+- Entities imported from another package (for example a shared domain package) are only checked when `project_package_name` names it.

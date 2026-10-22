@@ -6,30 +6,33 @@ import 'timezone_safety_utils.dart';
 
 /// Lint rule that validates log context against the enclosing symbol scope.
 ///
-/// Scope (v1):
-/// - Only applies to `work_tracker/lib/**` files.
-/// - Only checks `AppLoggerService.error(...)` and `.warning(...)`.
-/// - Only checks when `context:` is present and is a simple string literal.
-/// - Only checks when a reliable enclosing member scope can be inferred.
+/// Defaults: files matching `**/lib/**`; `error`/`warning` calls on receivers
+/// named `AppLoggerService`, `appLoggerService` or `*LoggerService`. Only literal
+/// `context:` values with a reliable enclosing member scope are checked.
 class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
   const LoggerContextMatchesScopeLint({
-    this.includeGlobs,
+    this.includeGlobs = defaultIncludeGlobs,
     this.excludeGlobs = const [],
     this.loggerNames,
     this.methods = const ['error', 'warning'],
     this.contextArgument = 'context',
   }) : super(code: _code);
 
-  final List<String>? includeGlobs, loggerNames;
-  final List<String> excludeGlobs, methods;
+  /// Generic default scope: every library file of the analyzed package.
+  static const defaultIncludeGlobs = ['**/lib/**'];
+
+  final List<String>? loggerNames;
+  final List<String> includeGlobs, excludeGlobs, methods;
   final String contextArgument;
 
   static LoggerContextMatchesScopeLint fromConfigs(CustomLintConfigs configs) {
     final options = readRuleOptions(configs, _code.name);
     return LoggerContextMatchesScopeLint(
-      includeGlobs: options.containsKey('include_globs')
-          ? readStringListOption(options, 'include_globs')
-          : null,
+      includeGlobs: readStringListOption(
+        options,
+        'include_globs',
+        fallback: defaultIncludeGlobs,
+      ),
       excludeGlobs: readStringListOption(options, 'exclude_globs'),
       loggerNames: options.containsKey('logger_names')
           ? readStringListOption(options, 'logger_names')
@@ -59,11 +62,7 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
     CustomLintContext context,
   ) {
     if (matchesAnyGlob(resolver.path, excludeGlobs)) return;
-    if (includeGlobs != null) {
-      if (!matchesAnyGlob(resolver.path, includeGlobs!)) return;
-    } else if (!_isWorkTrackerLibFile(resolver.path)) {
-      return;
-    }
+    if (!matchesAnyGlob(resolver.path, includeGlobs)) return;
 
     context.registry.addMethodInvocation((MethodInvocation node) {
       _checkMethodInvocation(node, reporter);
@@ -102,11 +101,6 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
             '"$expectedContext".',
       ),
     );
-  }
-
-  bool _isWorkTrackerLibFile(String filePath) {
-    final normalized = filePath.replaceAll('\\', '/');
-    return normalized.contains('/work_tracker/lib/');
   }
 
   bool _isAppLoggerServiceCall(MethodInvocation node) {

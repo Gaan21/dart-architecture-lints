@@ -32,6 +32,13 @@ consumer; updating never edits a consumer's configuration.
   `Result` in data sources, typedef aliases of `Result` returns, `Stream`/`FutureOr`
   of `void`. Newly reported: repository `Stream`/`FutureOr` getters, data-source
   `FutureOr` getters and unannotated overrides inheriting a non-Result type.
+- **Generic defaults (behavior change: these rules now apply in any project).**
+  `logger_context_matches_scope` now defaults to `include_globs: ["**/lib/**"]`
+  instead of only paths containing `/work_tracker/lib/`.
+  `no_domain_entities_in_presentation_ui` now defaults `project_package_name` to
+  the analyzed package (its `package:` URI, else the project pubspec name)
+  instead of `work_tracker`. Explicit options still override both.
+- Removed the unused `yaml` and `crypto` dev dependencies.
 - **`no_result_throw`** no longer reports a `throw`/`rethrow` caught by a matching
   clause of an enclosing `try` block in the same function body. Its document now
   states that `rethrow` is reported (it always was).

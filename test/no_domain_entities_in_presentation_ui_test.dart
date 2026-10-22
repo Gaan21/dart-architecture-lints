@@ -14,6 +14,81 @@ void main() {
         rule: const NoDomainEntitiesInPresentationUiLint(),
         relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
         source: '''
+import 'package:lint_test_project/domain/entities/entities.dart';
+
+class DashboardScreen {}
+''',
+      );
+
+      expect(
+        _errorCodes(errors),
+        contains('no_domain_entities_in_presentation_ui'),
+      );
+    });
+
+    test(
+      'reports domain entities file import in presentation/widgets',
+      () async {
+        final errors = await _runRule(
+          rule: const NoDomainEntitiesInPresentationUiLint(),
+          relativeFilePath: 'lib/presentation/widgets/worker_tile.dart',
+          source: '''
+import 'package:lint_test_project/domain/entities/worker_entity.dart';
+
+class WorkerTile {}
+''',
+        );
+
+        expect(
+          _errorCodes(errors),
+          contains('no_domain_entities_in_presentation_ui'),
+        );
+      },
+    );
+
+    test(
+      'does not report when file is explicit _ui_mapper exception',
+      () async {
+        final errors = await _runRule(
+          rule: const NoDomainEntitiesInPresentationUiLint(),
+          relativeFilePath:
+              'lib/presentation/screens/incidencias/incidencias_ui_mapper.dart',
+          source: '''
+import 'package:lint_test_project/domain/entities/incidencia_entity.dart';
+
+class IncidenciasUiMapper {}
+''',
+        );
+
+        expect(
+          _errorCodes(errors),
+          isNot(contains('no_domain_entities_in_presentation_ui')),
+        );
+      },
+    );
+
+    test('does not report ui model import in presentation/screens', () async {
+      final errors = await _runRule(
+        rule: const NoDomainEntitiesInPresentationUiLint(),
+        relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
+        source: '''
+import 'package:lint_test_project/presentation/models/worker_ui_model.dart';
+
+class DashboardScreen {}
+''',
+      );
+
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_domain_entities_in_presentation_ui')),
+      );
+    });
+
+    test('defaults to the analyzed package, not another package', () async {
+      final errors = await _runRule(
+        rule: const NoDomainEntitiesInPresentationUiLint(),
+        relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
+        source: '''
 import 'package:work_tracker/domain/entities/entities.dart';
 
 class DashboardScreen {}
@@ -22,61 +97,53 @@ class DashboardScreen {}
 
       expect(
         _errorCodes(errors),
-        contains('no_domain_entities_in_presentation_ui'),
-      );
-    });
-
-    test('reports domain entities file import in presentation/widgets',
-        () async {
-      final errors = await _runRule(
-        rule: const NoDomainEntitiesInPresentationUiLint(),
-        relativeFilePath: 'lib/presentation/widgets/worker_tile.dart',
-        source: '''
-import 'package:work_tracker/domain/entities/worker_entity.dart';
-
-class WorkerTile {}
-''',
-      );
-
-      expect(
-        _errorCodes(errors),
-        contains('no_domain_entities_in_presentation_ui'),
-      );
-    });
-
-    test('does not report when file is explicit _ui_mapper exception',
-        () async {
-      final errors = await _runRule(
-        rule: const NoDomainEntitiesInPresentationUiLint(),
-        relativeFilePath:
-            'lib/presentation/screens/incidencias/incidencias_ui_mapper.dart',
-        source: '''
-import 'package:work_tracker/domain/entities/incidencia_entity.dart';
-
-class IncidenciasUiMapper {}
-''',
-      );
-
-      expect(
-        _errorCodes(errors),
         isNot(contains('no_domain_entities_in_presentation_ui')),
       );
     });
 
-    test('does not report ui model import in presentation/screens', () async {
-      final errors = await _runRule(
-        rule: const NoDomainEntitiesInPresentationUiLint(),
-        relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
-        source: '''
-import 'package:work_tracker/presentation/models/worker_ui_model.dart';
+    test(
+      'explicit project_package_name overrides the analyzed package',
+      () async {
+        const source = '''
+import 'package:work_tracker/domain/entities/entities.dart';
+import 'package:lint_test_project/domain/entities/entities.dart';
 
 class DashboardScreen {}
-''',
-      );
+''';
+        final errors = await _runRule(
+          rule: NoDomainEntitiesInPresentationUiLint(
+            config: NoDomainEntitiesInPresentationUiConfig.fromJson(const {
+              'project_package_name': 'work_tracker',
+            }),
+          ),
+          relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
+          source: source,
+        );
 
+        expect(errors, hasLength(1));
+        expect(
+          source
+              .substring(errors.single.offset)
+              .startsWith("'package:work_tracker/"),
+          isTrue,
+        );
+      },
+    );
+
+    test('package name falls back to the analyzed pubspec name', () {
       expect(
-        _errorCodes(errors),
-        isNot(contains('no_domain_entities_in_presentation_ui')),
+        NoDomainEntitiesInPresentationUiLint.analyzedPackageName(
+          Uri.parse('package:my_app/presentation/screens/a.dart'),
+          'other',
+        ),
+        'my_app',
+      );
+      expect(
+        NoDomainEntitiesInPresentationUiLint.analyzedPackageName(
+          Uri.file('/tmp/project/lib/presentation/screens/a.dart'),
+          'my_app',
+        ),
+        'my_app',
       );
     });
 
@@ -85,7 +152,7 @@ class DashboardScreen {}
         rule: const NoDomainEntitiesInPresentationUiLint(),
         relativeFilePath: 'lib/domain/usecases/get_worker_usecase.dart',
         source: '''
-import 'package:work_tracker/domain/entities/entities.dart';
+import 'package:lint_test_project/domain/entities/entities.dart';
 
 class GetWorkerUseCase {}
 ''',
@@ -104,14 +171,26 @@ Future<List<AnalysisError>> _runRule({
   required String relativeFilePath,
   required String source,
 }) async {
-  final tempDir =
-      await Directory.systemTemp.createTemp('presentation_domain_lint_test_');
+  final tempDir = await Directory.systemTemp.createTemp(
+    'presentation_domain_lint_test_',
+  );
   try {
     final pubspec = File('${tempDir.path}/pubspec.yaml');
     await pubspec.writeAsString('''
 name: lint_test_project
 environment:
   sdk: ">=3.5.0 <4.0.0"
+''');
+
+    // A resolved package (as after `pub get`) gives lib files package: URIs.
+    final packageConfig = File(
+      '${tempDir.path}/.dart_tool/package_config.json',
+    );
+    await packageConfig.parent.create(recursive: true);
+    await packageConfig.writeAsString('''
+{"configVersion": 2, "packages": [
+  {"name": "lint_test_project", "rootUri": "../", "packageUri": "lib/"}
+]}
 ''');
 
     final file = File('${tempDir.path}/$relativeFilePath');

@@ -39,13 +39,23 @@ class NoDomainEntitiesInPresentationUiLint
     if (!config.matchesTargetPath(filePath)) return;
     if (config.isAllowlistedPath(filePath)) return;
 
+    final packageName =
+        config.projectPackageName ??
+        analyzedPackageName(resolver.source.uri, context.pubspec.name);
     context.registry.addImportDirective((ImportDirective node) {
       final uri = node.uri.stringValue;
       if (uri == null) return;
-      if (!_isDomainEntitiesImport(uri, config.projectPackageName)) return;
+      if (!_isDomainEntitiesImport(uri, packageName)) return;
       reporter.atNode(node.uri, _code);
     });
   }
+
+  /// The analyzed library's own package: its `package:` URI when available,
+  /// otherwise the analyzed project's pubspec name supplied by custom_lint.
+  static String analyzedPackageName(Uri source, String pubspecName) =>
+      source.scheme == 'package' && source.pathSegments.isNotEmpty
+      ? source.pathSegments.first
+      : pubspecName;
 
   bool _isDomainEntitiesImport(String importUri, String packageName) {
     final entitiesPrefix = 'package:$packageName/domain/entities';
@@ -56,7 +66,7 @@ class NoDomainEntitiesInPresentationUiLint
 
 class NoDomainEntitiesInPresentationUiConfig {
   const NoDomainEntitiesInPresentationUiConfig({
-    this.projectPackageName = 'work_tracker',
+    this.projectPackageName,
     this.includeGlobs = _defaultIncludeGlobs,
     this.allowedFileGlobs = _defaultAllowedFileGlobs,
   });
@@ -67,8 +77,8 @@ class NoDomainEntitiesInPresentationUiConfig {
     final packageNameRaw = json['project_package_name'];
     final packageName =
         packageNameRaw is String && packageNameRaw.trim().isNotEmpty
-            ? packageNameRaw.trim()
-            : 'work_tracker';
+        ? packageNameRaw.trim()
+        : null;
 
     return NoDomainEntitiesInPresentationUiConfig(
       projectPackageName: packageName,
@@ -85,7 +95,8 @@ class NoDomainEntitiesInPresentationUiConfig {
     );
   }
 
-  final String projectPackageName;
+  /// Explicit package name; null uses the analyzed package's own name.
+  final String? projectPackageName;
   final List<String> includeGlobs;
   final List<String> allowedFileGlobs;
 
