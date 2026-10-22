@@ -22,6 +22,7 @@ import 'package:dart_architecture_lints/no_result_throw.dart';
 import 'package:dart_architecture_lints/uistate_must_call_super_dispose.dart';
 import 'package:dart_architecture_lints/multiprovider_order.dart';
 import 'package:dart_architecture_lints/domain_entities_must_use_freezed.dart';
+import 'package:dart_architecture_lints/domain_values_shallow_immutable.dart';
 import 'package:dart_architecture_lints/no_serialization_in_entities.dart';
 import 'package:dart_architecture_lints/models_must_have_json_serialization.dart';
 import 'package:dart_architecture_lints/usecases_extend_base_usecase.dart';
@@ -84,7 +85,9 @@ class _MyCustomLints extends PluginBase {
     const UiStateMustCallSuperDisposeLint(),
     const MultiProviderOrderLint(),
     // Phase 1A: Domain/Data layer foundation rules
+    // Opt-in Freezed convention and generator-independent shallow check
     const DomainEntitiesMustUseFreezed(),
+    const DomainValuesShallowImmutable(),
     const NoSerializationInEntities(),
     const ModelsMustHaveJsonSerialization(),
     // Phase 1B: Obligatory patterns

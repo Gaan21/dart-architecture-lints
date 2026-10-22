@@ -1,84 +1,40 @@
 <!-- example-scope: isolated no_device_local_in_presentation -->
 
-> **Example contract: `no_device_local_in_presentation` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+> **Example contract: `no_device_local_in_presentation` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
-# `no_device_local_in_presentation`
+# no_device_local_in_presentation
 
-Prevents direct usage of `DateTime.toLocal()` in presentation/UI files.
+**Default severity**: info. Enabled by default.
 
-This rule exists to avoid accidental device-timezone conversion in widgets/screens,
-which can produce inconsistent UX when backend values are already timezone-aware.
+## What it detects
 
-## What it reports
+Calls to a method named `toLocal` with no arguments, in files matching the include globs and not the exclude globs, unless the receiver matches `allowed_receivers` or the call is inside an invocation matching `allowed_wrappers`.
 
-Reports any `.toLocal()` call in files matched by `include_globs` (minus
-`exclude_globs`) unless the receiver or wrapper is explicitly allowlisted.
+## Why
 
-Message:
+Device-local time is wrong whenever the user is outside the organization's time zone; presentation should render values through an approved zone-aware helper.
 
-> Avoid DateTime.toLocal() in presentation layer. Use backend timezone-aware values or approved time helper.
-
-## Default scope
-
-- `**/presentation/**`
-- `**/ui/**`
-- `**/screens/**`
-- `**/widgets/**`
-
-## Configuration
-
-```yaml
-custom_lint:
-  rules:
-    - no_device_local_in_presentation:
-        include_globs:
-          - "**/presentation/**"
-          - "**/ui/**"
-        exclude_globs:
-          - "**/presentation/legacy/**"
-        allowed_receivers:
-          - "approvedTime"
-          - "backendClock.*"
-        allowed_wrappers:
-          - "TimeContract.*"
-          - "EmpresaDateTimeFormatter.*"
-        # alias supported:
-        # allowed_helpers:
-        #   - "TimeContract.*"
-```
-
-## Examples
+## Example
 
 ```dart
-// ❌ BAD
-String render(DateTime value) => value.toLocal().toIso8601String();
-
-// ✅ GOOD
-String render(DateTime value) => TimeContract.toDisplayDate(value);
+// BAD
+Text(DateFormat.Hm().format(entry.startUtc.toLocal()))
 ```
 
-## Expected false positives / false negatives
-
-- False positive (expected): a project-specific safe wrapper may still be
-  flagged until you add it to `allowed_wrappers`.
-- False negative (expected): wrapper methods that internally call `.toLocal()`
-  are allowed once whitelisted, even if implementation quality is poor.
-
-## Migration tips
-
-1. Introduce a dedicated time helper (for example `TimeContract` or
-   `CompanyDateTimeFormatter`) in application/core.
-2. Replace direct `.toLocal()` in UI with that helper.
-3. Add only approved wrappers to `allowed_wrappers`.
-4. Keep `allowed_receivers` short and explicit.
-
-## Testing guide (external project)
-
-1. Enable the rule in your target project `analysis_options.yaml`.
-2. Add one `.toLocal()` usage in `presentation` and run:
-
-```bash
-dart run custom_lint
+```dart
+// GOOD
+Text(DateFormat.Hm().format(entry.startUtc.toEmpresaLocalTime(tz)))
 ```
 
-3. Confirm lint appears in UI file and does not appear in non-included layers.
+## Disable if
+
+Your app intentionally displays times in the device zone.
+
+## Options
+
+Sibling keys: `include_globs` (default `**/presentation/**`, `**/ui/**`, `**/screens/**`, `**/widgets/**`), `exclude_globs`, `allowed_receivers` (wildcards matched against the receiver source) and `allowed_wrappers` (wildcards matched against `method`, `Target.method`; `allowed_helpers` is a fallback alias).
+
+## Limits
+
+- Matches the method name, not the resolved `DateTime` type.
+- Conversions done outside the included paths and then displayed are not detected.

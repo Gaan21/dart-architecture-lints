@@ -1,210 +1,50 @@
 <!-- example-scope: isolated no_static_map_controllers -->
 
-> **Example contract: `no_static_map_controllers` only.** Flutter/Provider excerpts below are isolated ownership sketches, not compiled whole-profile fixtures. Getter-first order and class-containing controller names are preserved. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+> **Example contract: `no_static_map_controllers` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
 # no_static_map_controllers
 
-**Rule name**: `no_static_map_controllers`
-Selection and default severity are listed in the generated README catalogue.
+**Default severity**: info. Enabled by default.
 
-## Overview
+## What it detects
 
-Prohibits static Map fields that contain Flutter controllers or resources with lifecycle (TextEditingController, Timer, FocusNode, ScrollController, etc.). This enforces proper lifecycle management and prevents memory leaks.
+A `static` field whose resolved type is a `Map` with a value type that is (or extends) a lifecycle resource such as `TextEditingController`, `FocusNode`, `Timer`, `StreamController` or `StreamSubscription`. Inferred types are resolved.
 
-## Rationale
+## Why
 
-Static Maps containing controllers create several critical problems:
+Static maps outlive widgets and screens, so stored controllers are never disposed and keep stale state.
 
-1. **Memory leaks**: Resources stored in static Maps are never disposed, remaining in memory forever
-2. **Key collisions**: Multiple screens using the same Type as key can interfere with each other
-3. **Implicit lifecycle**: No clear ownership - unclear when resources should be created/disposed
-4. **Testing difficulties**: Static state makes unit testing and widget testing unreliable
-
-## ❌ Bad (will trigger the rule)
+## Example
 
 ```dart
-// ❌ CRITICAL ERROR - Static Map with TextEditingController
-class AppBarActionsMixin {
-  static final Map<Type, TextEditingController> _controllers = {};
-
-  TextEditingController getController(Type screenType) {
-    return _controllers.putIfAbsent(
-      screenType,
-      () => TextEditingController(), // Never disposed!
-    );
-  }
-}
-
-// ❌ CRITICAL ERROR - Static Map with Timer
-class SearchHelper {
-  static final Map<String, Timer> _debounceTimers = {};
-}
-
-// ❌ CRITICAL ERROR - Static Map with FocusNode
-class FocusManager {
-  static final Map<String, FocusNode> _focusNodes = {};
-}
-
-// ❌ CRITICAL ERROR - Other lifecycle resources
-class UIResources {
-  static final Map<int, ScrollController> _scrollControllers = {};
-  static final Map<String, AnimationController> _animations = {};
-  static final Map<Type, StreamController> _streams = {};
+// BAD
+class SearchCache {
+  static final Map<String, TextEditingController> controllers = {};
 }
 ```
 
-## Isolated accepted ownership shapes for `no_static_map_controllers`
-
-The first class below is extracted from this document by
-`test/doc_sketch_regression_test.dart` and resolved with original local stand-ins.
-That test checks the isolated rule, strict class-containing names, getter-first
-method order and legacy explicit types. Provider/screen excerpts remain partial
-illustrations; the linked canonical sources provide whole-profile execution.
-
 ```dart
-// ✅ CORRECT - Controllers in scoped UiState with Provider
+// GOOD
 class SearchUiState extends ChangeNotifier {
-  final TextEditingController _searchTextEditingController = TextEditingController();
-  Timer? _debounceTimer;
-
-  TextEditingController get searchTextEditingController => _searchTextEditingController;
+  final TextEditingController textEditingController = TextEditingController();
 
   @override
   void dispose() {
-    _searchTextEditingController.dispose();
-    _debounceTimer?.cancel();
-    super.dispose();
-  }
-
-  void setQuery(String query) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      // Perform search
-    });
-  }
-}
-
-// ✅ CORRECT - Provide scoped instance per screen
-class ExpedienteListScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => SearchUiState()),
-        ChangeNotifierProvider(create: (_) => ExpedienteListViewModel()),
-      ],
-      child: const _ExpedienteListScreenContent(),
-    );
-  }
-}
-
-// ✅ CORRECT - Access via Provider in mixin
-mixin AppBarActionsMixin {
-  void search(BuildContext context) {
-    final TextEditingController textEditingController =
-        context.read<SearchUiState>().searchTextEditingController;
-    // Use textEditingController
-  }
-}
-
-// ✅ OK - Static Map without lifecycle resources (primitives/data)
-class ConfigCache {
-  static final Map<String, String> _settings = {};
-  static final Map<int, UserData> _userData = {}; // Plain data class
-}
-```
-
-## Detected Types
-
-This rule detects static Maps with these value types:
-
-- `TextEditingController`
-- `ScrollController`
-- `AnimationController`
-- `TabController`
-- `PageController`
-- `FocusNode`
-- `Timer`
-- `StreamController`
-- `StreamSubscription`
-
-## Problem Message
-
-> Static Map containing controllers/resources with lifecycle (TextEditingController, Timer, FocusNode, etc.) causes memory leaks and lifecycle issues.
-
-## Correction Message
-
-> Move controllers to a scoped ChangeNotifier (UiState) managed by Provider. Controllers must be properly disposed when no longer needed.
-
-## How to Test This Rule
-
-### Setup Test Project
-
-1. Create a test project with this custom lint as dependency
-2. Add rule to `analysis_options.yaml`:
-   ```yaml
-   custom_lint:
-     rules:
-        - no_static_map_controllers: true
-   ```
-
-### Test File: `lib/test_static_map_controllers.dart`
-
-```dart
-import 'dart:async';
-import 'package:flutter/material.dart';
-
-// ❌ Should trigger error
-class BadAppBarMixin {
-  static final Map<Type, TextEditingController> _controllers = {};
-}
-
-// ❌ Should trigger error
-class BadSearchHelper {
-  static final Map<String, Timer> _timers = {};
-}
-
-// ❌ Should trigger error
-class BadFocusManager {
-  static final Map<int, FocusNode> _nodes = {};
-}
-
-// ✅ Should NOT trigger (proper scoped UiState)
-class SearchUiState extends ChangeNotifier {
-  final TextEditingController _textEditingController = TextEditingController();
-
-  @override
-  void dispose() {
-    _textEditingController.dispose();
+    textEditingController.dispose();
     super.dispose();
   }
 }
-
-// ✅ Should NOT trigger (non-lifecycle data)
-class ConfigCache {
-  static final Map<String, String> _settings = {};
-}
 ```
 
-### Expected Results
+## Disable if
 
-```bash
-$ dart run custom_lint
+You keep a reviewed static registry that disposes every entry explicitly, and accept the leak risk.
 
-lib/test_static_map_controllers.dart:5:3 • Static Map containing controllers/resources with lifecycle... • no_static_map_controllers
-lib/test_static_map_controllers.dart:10:3 • Static Map containing controllers/resources with lifecycle... • no_static_map_controllers
-lib/test_static_map_controllers.dart:15:3 • Static Map containing controllers/resources with lifecycle... • no_static_map_controllers
-```
+## Options
 
-## Related Guidelines
+None.
 
-- 02B_UI_SCREENS_COMPLEX.md - Provider Scoped Pattern
-- 02B_UI_PATTERNS.md - UiState Pattern
+## Limits
 
-## Benefits
-
-- ✅ Prevents memory leaks
-- ✅ Clear lifecycle ownership
-- ✅ Better testability
-- ✅ Explicit resource management
-- ✅ No key collision bugs
+- Only `Map` values are inspected; static lists, sets or single resource fields are not reported.
+- Resource names are matched by class name, including supertypes.

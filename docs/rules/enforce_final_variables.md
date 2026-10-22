@@ -1,20 +1,49 @@
 <!-- example-scope: isolated enforce_final_variables -->
 
-> **Example contract: `enforce_final_variables` only.** Any Dart fences are isolated sketches, not compiled whole-profile fixtures. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md) for executed acceptance.
+> **Example contract: `enforce_final_variables` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
 # enforce_final_variables
 
-Reports local `var` bindings with no resolved writes in their enclosing function
-body. Direct and compound assignments, increments and captured writes in nested
-closures keep a binding mutable. Same-named declarations resolve independently.
-The diagnostic ID remains `enforce_final_variables`.
+**Default severity**: info. Enabled by default.
 
-Loop declarations retain their existing exception. Fields and top-level bindings
-are not inferred immutable by a one-file scan; external code may write them.
-For a multi-variable declaration, any immutable binding can trigger the shared
-`var` diagnostic; split mutable and immutable bindings before applying `final`.
+## What it detects
 
-`final` protects the binding, not deep object immutability. A reassigned local is
-valid and must not be converted mechanically to `final`. In the selective typing
-profile an obvious immutable local may be inferred; legacy strict typing still
-requires its written type.
+A local `var` declaration whose variables are never written again in the enclosing function body. Writes include assignments, compound assignments, increments and writes inside closures, found through resolved elements.
+
+## Why
+
+A `final` local tells the reader the binding does not change.
+
+## Example
+
+```dart
+// BAD
+void run() {
+  var total = 0;
+  print(total);
+}
+```
+
+```dart
+// GOOD
+void run() {
+  final total = 0;
+  var count = 0;
+  count++;
+  print([total, count]);
+}
+```
+
+## Disable if
+
+Your style guide prefers `var` for locals, or you rely on the upstream `prefer_final_locals` lint instead.
+
+## Options
+
+None.
+
+## Limits
+
+- Only `var`; explicitly typed non-final locals (`int x = 0;`) are not reported.
+- Loop variables of `for` and `for-in` are allowed.
+- Fields and top-level variables are never reported, because other libraries may write them.

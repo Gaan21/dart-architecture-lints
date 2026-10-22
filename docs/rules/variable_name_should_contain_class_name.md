@@ -1,14 +1,41 @@
 <!-- example-scope: isolated variable_name_should_contain_class_name -->
 
+> **Example contract: `variable_name_should_contain_class_name` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+
 # variable_name_should_contain_class_name
 
-The architecture selection keeps class-containing variable names strict. The
-rule uses resolved types and a case-insensitive comparison after removing
-underscores. Supported wrappers are inspected for a relevant nested class;
-primitive types are exempt. Its existing documented-callback exception remains.
+**Default severity**: info. Enabled by default.
 
-The actual [EventOwner source](../../examples/architecture/lib/presentation/viewModels/event_owner.dart)
-uses `_streamController`, not a generic controller abbreviation. The
-[runnable guide](../../examples/architecture/README.md) links the original sources
-checked under all 48 selected rules. No inline snippet here claims independent
-compilation or whole-profile acceptance; see the [coverage matrix](../example_coverage.md).
+## What it detects
+
+Any variable declaration (local, field, top-level, loop) whose resolved class type is not primitive (`int`, `double`, `bool`, `String`, `num`, `void`, `Object`, `dynamic`, `Widget`) and whose name, ignoring case and underscores, does not contain the class name. `List`, `Set`, `Map`, `Iterable`, `Future`, `Stream`, `ValueNotifier`, `ChangeNotifier` and `Notifier` are unwrapped to their first non-primitive type argument.
+
+## Why
+
+Names that contain the type make data flow readable without hovering, especially with many collaborators.
+
+## Example
+
+```dart
+// BAD
+final DashboardViewModel vm = DashboardViewModel();
+```
+
+```dart
+// GOOD
+final DashboardViewModel dashboardViewModel = DashboardViewModel();
+```
+
+## Disable if
+
+Your naming convention prefers short role names (`vm`, `repo`) or names that describe purpose rather than type.
+
+## Options
+
+None.
+
+## Limits
+
+- Parameters are not checked.
+- Variables inside a closure that is not within a method are skipped when a comment precedes the declaration.
+- Implemented in `lib/variable_name_should_match_class_name.dart`; the diagnostic ID differs from the file name.

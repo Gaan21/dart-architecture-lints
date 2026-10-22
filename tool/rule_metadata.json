@@ -2,260 +2,313 @@
   {
     "id": "enforce_final_variables",
     "section": "Core Language Rules",
-    "description": "Prefer `final` over `var` for immutable variables"
+    "detects": "Local `var` bindings that are never reassigned",
+    "disable_if": "Your style prefers `var` for locals regardless of reassignment"
   },
   {
     "id": "no_late_keyword",
     "section": "Core Language Rules",
-    "description": "Avoid `late` keyword except for justified DI cases"
+    "detects": "`late` variables, except `late final` dependency-injection holders",
+    "disable_if": "Your team accepts `late` with reviewed initialization guarantees"
   },
   {
     "id": "no_bang_operator",
     "section": "Core Language Rules",
-    "description": "Discourage null assertion operator (`!`) usage"
+    "detects": "Every postfix null assertion `!`",
+    "disable_if": "The project accepts `!` after reviewed nullability guarantees"
   },
   {
     "id": "method_order",
     "section": "Code Organization Rules",
-    "description": "Enforce method order: getters/setters → @override → public → private"
+    "detects": "Class methods out of order: getters/setters, `@override`, public, private",
+    "disable_if": "Your style guide uses a different member order"
   },
   {
     "id": "variable_name_should_contain_class_name",
     "section": "Code Organization Rules",
-    "description": "Prevent generic variable names for complex types"
+    "detects": "Variables of a class type whose name does not contain the class name",
+    "disable_if": "Your naming convention allows short or role-only names"
   },
   {
     "id": "one_class_per_file",
     "section": "Code Organization Rules",
-    "description": "Promote one public class per file"
+    "detects": "More than one public class, enum or mixin per file",
+    "disable_if": "Your style allows cohesive type families in one file"
   },
   {
     "id": "avoid_hardcoded_strings",
     "section": "Flutter-Specific Rules",
-    "description": "Detect hardcoded UI strings, suggest i18n"
+    "detects": "String literals in presentation and use-case files that look like user-facing text",
+    "disable_if": "The project does not localize, or localizes outside these layers"
   },
   {
     "id": "viewmodels_no_buildcontext",
     "section": "Flutter-Specific Rules",
-    "description": "Prevent BuildContext usage in ViewModels"
+    "detects": "`BuildContext` fields or constructor parameters in view models",
+    "disable_if": "Never in MVVM code; only if view models intentionally own UI context"
   },
   {
     "id": "usecases_follow_pattern",
     "section": "Architecture & Patterns Rules",
-    "description": "Enforce UseCase pattern with execute() → Result<T>"
+    "detects": "Concrete `*UseCase` classes without their own `execute()` returning `Result`",
+    "disable_if": "Your use cases use another entry point (`call`, a command object)"
   },
   {
     "id": "viewmodels_call_super_dispose",
     "section": "Architecture & Patterns Rules",
-    "description": "Ensure ViewModels call super.dispose()"
+    "detects": "`dispose()` in view-model-like classes that never calls `super.dispose()`",
+    "disable_if": "Never for `ChangeNotifier`-based view models"
   },
   {
     "id": "no_external_dependencies_in_domain",
     "section": "Architecture & Patterns Rules",
-    "description": "Keep domain layer dependency-free"
+    "detects": "Imports of framework, network, storage, platform or state packages in domain files",
+    "disable_if": "Your domain layer deliberately depends on one of these packages"
   },
   {
     "id": "no_result_throw",
     "section": "Architecture & Patterns Rules",
-    "description": "Prevent throw in UseCases/Repositories, enforce Result<T>"
+    "detects": "`throw`/`rethrow` that can escape use-case or repository methods",
+    "disable_if": "Your use cases/repositories intentionally propagate exceptions"
   },
   {
     "id": "viewmodels_no_flutter_types",
     "section": "Architecture & Patterns Rules",
-    "description": "Prevent Flutter types in ViewModels (use UiState)"
+    "detects": "Flutter UI types declared as fields of `*ViewModel*` classes",
+    "disable_if": "Your view models deliberately hold Flutter UI objects"
   },
   {
     "id": "domain_entities_must_use_freezed",
     "section": "Architecture & Patterns Rules",
-    "description": "Enforce @freezed on domain entities for immutability"
+    "detects": "Concrete public domain entity/value-object classes without `@freezed`",
+    "disable_if": "The project does not use Freezed for domain values"
+  },
+  {
+    "id": "domain_values_shallow_immutable",
+    "section": "Architecture & Patterns Rules",
+    "detects": "Mutable instance fields and public setters in domain entities/value objects",
+    "disable_if": "Your domain values are deliberately mutable"
   },
   {
     "id": "no_serialization_in_entities",
     "section": "Architecture & Patterns Rules",
-    "description": "Prevent fromJson/toJson in domain entities"
+    "detects": "`fromJson`/`toJson` members or JSON annotations on domain entities/value objects",
+    "disable_if": "Your domain types intentionally double as wire models"
   },
   {
     "id": "models_must_have_json_serialization",
     "section": "Architecture & Patterns Rules",
-    "description": "Ensure data models have JSON serialization"
+    "detects": "Data models without `fromJson` + `toJson` or a JSON/Freezed annotation",
+    "disable_if": "Your models use another codec, or some models are not serialized"
   },
   {
     "id": "usecases_extend_base_usecase",
     "section": "Architecture & Patterns Rules",
-    "description": "Enforce UseCases extend BaseUseCase<T, P> for consistent error handling"
+    "detects": "Concrete `*UseCase` classes under `/domain/useCases/` not extending `BaseUseCase`",
+    "disable_if": "Your use cases do not share a `BaseUseCase`"
   },
   {
     "id": "viewmodels_extend_base_viewmodel",
     "section": "Architecture & Patterns Rules",
-    "description": "Enforce ViewModels extend BaseViewModel<T> or BaseViewModelWithEffects<T>"
+    "detects": "Concrete `*ViewModel` classes under `/presentation/viewModels/` not extending a base view model",
+    "disable_if": "Your view models do not share `BaseViewModel`"
   },
   {
     "id": "repository_methods_return_result",
     "section": "Architecture & Patterns Rules",
-    "description": "Enforce Repository methods return Future<Result<T>> or Result<T>"
+    "detects": "Public repository operations not returning `Result` (sync, Future, FutureOr or Stream)",
+    "disable_if": "Your repositories use another failure protocol"
   },
   {
     "id": "streamcontroller_must_close",
     "section": "Architecture & Patterns Rules",
-    "description": "Ensure StreamController fields are closed in dispose() to prevent memory leaks"
+    "detects": "Owned `StreamController` fields not closed on every normal `dispose` exit",
+    "disable_if": "Never for owned controllers; review borrowed ones instead"
   },
   {
     "id": "require_explicit_types",
     "section": "Architecture & Patterns Rules",
-    "description": "Require explicit types using strict (legacy) or selective boundary policy"
+    "detects": "Missing type annotations (strict: fields, locals, loops; selective: public boundaries)",
+    "disable_if": "Your style relies on type inference"
   },
   {
     "id": "datasources_return_result",
     "section": "Architecture & Patterns Rules",
-    "description": "Enforce DataSource methods return Future<Result<T>>, Result<T>, or Stream<Result<T>>"
+    "detects": "Public data-source operations, including interface declarations, not returning `Result`",
+    "disable_if": "Your data sources throw and repositories convert failures"
   },
   {
     "id": "no_business_logic_in_widgets",
     "section": "Architecture & Patterns Rules",
-    "description": "Prevent business logic in Widgets (enforce MVVM separation)"
+    "detects": "Use-case/repository construction, `*UseCase.execute()` and complex filters in widget methods",
+    "disable_if": "Your widgets intentionally hold presentation logic beyond rendering"
   },
   {
     "id": "no_static_map_controllers",
     "section": "State Management & Lifecycle Rules",
-    "description": "Prevent static Maps with Controllers/Timers (memory leaks)",
-    "status": "✅ Validated"
+    "detects": "Static `Map` fields whose value type is a lifecycle resource",
+    "disable_if": "Never in Flutter UI code; only if no such caches exist"
   },
   {
     "id": "mixin_no_state_ownership",
     "section": "State Management & Lifecycle Rules",
-    "description": "Prevent mixins from owning lifecycle resources",
-    "status": "✅ Validated"
+    "detects": "Mixin fields whose type is a lifecycle resource (controllers, timers, focus nodes)",
+    "disable_if": "Your mixins deliberately own and dispose resources"
   },
   {
     "id": "uistate_must_call_super_dispose",
     "section": "State Management & Lifecycle Rules",
-    "description": "Ensure UiState (ChangeNotifier) calls super.dispose()",
-    "status": "✅ Validated"
+    "detects": "`dispose()` in UI-state classes that never calls `super.dispose()`",
+    "disable_if": "Never for `ChangeNotifier`-based UI state"
   },
   {
     "id": "multiprovider_order",
     "section": "State Management & Lifecycle Rules",
-    "description": "Enforce UiState before ViewModel in MultiProvider",
-    "status": "✅ Validated"
+    "detects": "`*UiState` providers listed after `*ViewModel` providers in `MultiProvider`",
+    "disable_if": "Your composition does not follow the UiState-before-ViewModel naming contract"
   },
   {
     "id": "no_local_datetime_constructors",
     "section": "Development & Testing Rules",
-    "description": "Discourage local DateTime constructors, suggest Clock injection"
+    "detects": "`DateTime.now()`, local `DateTime(...)`, non-UTC epoch and unconverted `parse`",
+    "disable_if": "Your project accepts device-local clocks and dates throughout"
   },
   {
     "id": "no_direct_internet_calls",
     "section": "Development & Testing Rules",
-    "description": "Prevent direct HTTP calls outside infrastructure layer"
+    "detects": "HTTP client construction/calls and connectivity checks outside network service files",
+    "disable_if": "Your app has no central network service"
   },
   {
     "id": "enforce_utc_dates",
     "section": "Development & Testing Rules",
-    "description": "Ensure DateTime operations use UTC"
+    "detects": "Non-UTC `DateTime` construction or parsing in data-layer files",
+    "disable_if": "Data-layer timestamps are deliberately local or civil dates"
   },
   {
     "id": "require_keys_in_lists",
     "section": "Development & Testing Rules",
-    "description": "Require keys in ListView and similar widgets"
+    "detects": "Keyless widgets returned directly by `ListView.builder`/`GridView.builder` item builders",
+    "disable_if": "Your lists are static or items never move"
   },
   {
     "id": "logger_context_matches_scope",
     "section": "Development & Testing Rules",
-    "description": "Match configured logger context to its enclosing scope"
+    "detects": "Literal log `context:` values that differ from `Type.member` of the enclosing member",
+    "disable_if": "Your log context is not a `Type.member` string"
   },
   {
     "id": "no_device_local_in_presentation",
     "section": "Timezone Safety Rules",
-    "description": "Avoid device-local time (`toLocal()`) in the presentation layer; use an approved company-time helper"
+    "detects": "`DateTime.toLocal()` calls in presentation files",
+    "disable_if": "Device-local time is the intended display zone for your app"
   },
   {
     "id": "no_civil_utc_mix_without_helper",
     "section": "Timezone Safety Rules",
-    "description": "Detect civil-date and UTC-instant values mixed in one expression without an approved helper"
+    "detects": "Civil-date and UTC-instant values combined in one risky expression without an approved helper",
+    "disable_if": "Your code has no separate civil-date values, or no such mapping folders"
   },
   {
     "id": "no_utc_time_format_without_empresa_helper",
     "section": "Timezone Safety Rules",
-    "description": "Detect time formatting on a value not wrapped by an approved company-time helper, which renders UTC instead of company-local time"
+    "detects": "Time-pattern formatting of a value not wrapped by an approved company-time helper",
+    "disable_if": "Your app displays times in UTC or the device zone by design"
   },
   {
     "id": "avoid_unawaited",
     "section": "Async & Concurrency Rules",
-    "description": "Require a categorised justification comment on every `unawaited(...)` call"
+    "detects": "`unawaited(...)` without a valid `// unawaited-ok: <category> - <reason>` comment",
+    "disable_if": "Your team does not require justification for fire-and-forget futures"
   },
   {
     "id": "avoid_unawaited_ignore_without_reason",
     "section": "Async & Concurrency Rules",
-    "description": "Require a stated reason when an unawaited-governance rule is suppressed"
+    "detects": "`// ignore:` of the unawaited rules without `// ignore-reason: <reason>`",
+    "disable_if": "You disabled the unawaited-governance rules"
   },
   {
     "id": "avoid_async_in_provider_create",
     "section": "Async & Concurrency Rules",
-    "description": "Forbid fire-and-forget async work inside `Provider.create`, which can mutate state before the widget tree is ready"
+    "detects": "`unawaited(...)` directly inside a Provider `create`/`update` closure",
+    "disable_if": "Your provider setup never starts async work in `create`"
   },
   {
     "id": "avoid_async_wrapper_hides_unawaited",
     "section": "Async & Concurrency Rules",
-    "description": "Detect single-await async wrappers used to hide an unawaited future from the governance rule"
+    "detects": "Single-`await` async callbacks in `scheduleMicrotask`, `Timer.run` or `Future(...)`",
+    "disable_if": "You do not use the unawaited-governance rules"
   },
   {
     "id": "no_direct_error_logging_in_data_domain",
     "section": "Logging & Error Governance",
-    "description": "Forbid direct error/warning logging in the data and domain layers, where reporting is already centralised"
+    "detects": "`error`/`warning` calls on `*LoggerService` in data/domain files",
+    "disable_if": "Your data/domain layers own their error reporting"
   },
   {
     "id": "logger_context_must_be_structured",
     "section": "Logging & Error Governance",
-    "description": "Require a structured context on logger calls so log entries stay traceable and groupable"
+    "detects": "`warning`/`error`/`critical` logger calls without a structured literal `context`",
+    "disable_if": "Your logger has no context argument or uses another format"
   },
   {
     "id": "no_sensitive_data_in_log_metadata",
     "section": "Logging & Error Governance",
-    "description": "Forbid tokens, passwords, credentials and API keys in log metadata or log messages"
+    "detects": "Credential keys in log metadata and credential patterns in log messages",
+    "disable_if": "Never while logs may persist; only if no such logger exists"
   },
   {
     "id": "no_raw_exception_message_to_user",
     "section": "Logging & Error Governance",
-    "description": "Forbid raw exception messages in UI components; user-facing text must come from stable i18n codes"
+    "detects": "Raw exception messages (`error.message`, `e.toString()`) passed to UI text and dialogs",
+    "disable_if": "Your UI shows backend messages verbatim by design"
   },
   {
     "id": "no_exception_message_passthrough",
     "section": "Logging & Error Governance",
-    "description": "Detect raw exception strings being forwarded towards the UI instead of a stable error code"
+    "detects": "Raw exception/backend messages forwarded through `??`, message-like arguments or exception constructors",
+    "disable_if": "Your layers intentionally forward backend messages as user copy"
   },
   {
     "id": "app_exception_must_define_code",
     "section": "Logging & Error Governance",
-    "description": "Require every `AppException` subtype to define a stable code so the presentation layer can localise it"
+    "detects": "`AppException` subclasses without a `code`, and string-literal `code:` arguments",
+    "disable_if": "The project has no `AppException` type with stable codes"
   },
   {
     "id": "avoid_scattered_401_handling",
     "section": "Architecture & Patterns Rules",
-    "description": "Keep 401 handling centralised in the auth interceptor instead of scattered across call sites"
+    "detects": "`statusCode == 401` comparisons outside `AuthInterceptor`/`AuthService`",
+    "disable_if": "Your auth boundary uses other class names or 401 handling is legitimately local"
   },
   {
     "id": "top_level_screens_must_use_base_contract",
     "section": "Architecture & Patterns Rules",
-    "description": "Require top-level routed screens to extend a base screen contract for consistent behaviour"
+    "detects": "`*Screen` widgets built by top-level routes that do not extend a `Base*Screen`",
+    "disable_if": "Your project has no base-screen contract (the rule is then inactive)"
   },
   {
     "id": "no_domain_entities_in_presentation_ui",
     "section": "Architecture & Patterns Rules",
-    "description": "Forbid presentation UI from depending on domain entities directly; use presentation models"
+    "detects": "Imports of `package:<app>/domain/entities` in screens and widgets",
+    "disable_if": "The project lets UI consume domain entities directly"
   },
   {
     "id": "no_hardcoded_color_literal",
     "section": "Design Token Rules",
-    "description": "Forbid raw `Color(0x...)` literals in presentation; use a design token or the theme colour scheme"
+    "detects": "`Color(0x...)` hex literals in presentation files",
+    "disable_if": "The project has no color tokens or theme color scheme"
   },
   {
     "id": "no_hardcoded_border_radius",
     "section": "Design Token Rules",
-    "description": "Forbid raw border-radius literals in presentation; use a spacing token"
+    "detects": "`BorderRadius.circular` with literal 6, 12 or 16 (values with a spacing token)",
+    "disable_if": "The project has no `AppSpacing` radius tokens"
   },
   {
     "id": "overlay_lifecycle_context_safety",
     "section": "State Management & Lifecycle Rules",
-    "description": "Forbid dialog and sheet builders from capturing a caller-owned controller or using the caller's BuildContext for inherited lookups"
+    "detects": "Overlay builders that capture a caller-owned controller or use the caller's `BuildContext`",
+    "disable_if": "Never in Flutter UI code"
   }
 ]

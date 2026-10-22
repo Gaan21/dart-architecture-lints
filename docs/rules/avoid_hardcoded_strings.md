@@ -1,97 +1,41 @@
 <!-- example-scope: isolated avoid_hardcoded_strings -->
 
-> **Example contract: `avoid_hardcoded_strings` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+> **Example contract: `avoid_hardcoded_strings` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
 # avoid_hardcoded_strings
 
-## Descripción
-Esta regla detecta strings literales hardcoded en widgets de UI y sugiere el uso de internacionalización (i18n).
+**Default severity**: info. Enabled by default.
 
-## ¿Por qué es importante?
-- **Mantenibilidad**: Facilita traducciones y cambios de texto
-- **Consistencia**: Centraliza todos los textos de usuario
-- **Guidelines**: Cumple las invariantes del proyecto sobre i18n obligatorio
+## What it detects
 
-## Detecta
+Simple string literals of two or more characters that contain none of `.`, `/`, `#`, `_` or `:`, in files whose lowercased path has a `presentation` or `usecases` segment. Files with any path segment containing `test` are skipped.
+
+## Why
+
+User-facing text should come from the localization system so it can be translated and reviewed.
+
+## Example
+
 ```dart
-// ❌ Casos que generan error
-Text('Guardar')
-AppBar(title: Text('Mi App'))
-AlertDialog(title: Text('Error'))
-ElevatedButton(child: Text('Continuar'))
+// BAD
+Text('Save changes')
 ```
 
-## No detecta (casos permitidos)
 ```dart
-// ✅ Strings con i18n
-Text('common.save'.tr())
-AppBar(title: Text('app.title'.tr()))
-
-// ✅ Strings técnicos
-const String apiUrl = 'https://api.example.com';
-Widget(key: ValueKey('user_list_item'));
-const String path = '/api/users';
-
-// ✅ Archivos de test
-// (la regla no se aplica en archivos test/)
+// GOOD
+Text(AppLocalizations.of(context).saveChanges)
 ```
 
-## Configuración
-```yaml
-custom_lint:
-  rules:
-    avoid_hardcoded_strings: true
-```
+## Disable if
 
-## Widgets afectados
-La regla detecta strings hardcoded en estos widgets de Flutter:
+The app is not localized, or the heuristic reports too many non-user strings (keys, log text, identifiers) in your code base.
 
-- `Text`
-- `AppBar`
-- `AlertDialog` 
-- `SnackBar`
-- `FloatingActionButton`
-- `ElevatedButton`, `TextButton`, `OutlinedButton`
-- `Tooltip`
-- `ListTile`
-- `Card`
-- `Chip`
-- `Tab`
-- `NavigationDestination`
-- `BottomNavigationBarItem`
+## Options
 
-## Propiedades afectadas
-En widgets UI, detecta strings hardcoded en estas propiedades:
+None.
 
-- `title`, `label`, `text`, `content`
-- `message`, `tooltip`
-- `hintText`, `labelText`, `helperText`
-- `errorText`, `prefixText`, `suffixText`
-- `counterText`, `semanticsLabel`
+## Limits
 
-## Excepciones técnicas
-La regla NO alerta para strings que sean:
-
-- **URLs**: `'https://api.example.com'`
-- **Paths API**: `'/api/users'`
-- **Keys/IDs**: `'user_id'`, `'app.config'`
-- **Strings muy cortos**: `'/'`, `'+'`
-- **Colores hex**: `'#FF0000'`
-- **Ya con i18n**: `'key'.tr()`
-- **En archivos test**
-
-## Solución recomendada
-```dart
-// ❌ Antes
-Text('Guardar')
-
-// ✅ Después
-Text('common.save'.tr())
-```
-
-## Testing
-Para probar esta regla, crear archivos de prueba con casos correctos e incorrectos y ejecutar:
-
-```bash
-dart run custom_lint
-```
+- Heuristic: any literal without the excluded characters is reported, including map keys, log messages and enum-like names.
+- Interpolated strings are not reported; strings outside the two path segments are not checked.
+- A path segment merely containing `test` (for example `contest`) skips the file.

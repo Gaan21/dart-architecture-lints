@@ -2,9 +2,11 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+import 'package:dart_architecture_lints/result_return_types.dart';
 
-/// A lint rule that enforces Repository methods to return Future<Result<T>> or Result<T>.
-/// Ensures consistent error handling across the data layer by using the Result pattern.
+/// Requires public repository operations to return `Result` (directly or via
+/// `Future`/`FutureOr`/`Stream`). Synchronous getters and private helpers may
+/// return values directly; this is a signature check, not a proof of semantics.
 class RepositoryMethodsReturnResult extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [RepositoryMethodsReturnResult].
   const RepositoryMethodsReturnResult() : super(code: _code);
@@ -30,7 +32,7 @@ class RepositoryMethodsReturnResult extends GeneratedSkippingDartLintRule {
         'Los métodos de Repository deben retornar Future<Result<T>> o Result<T> para manejo de errores consistente.',
   );
 
-  /// Executes the lint rule to detect Repository methods that do not return Result<T>.
+  /// Executes the lint rule to detect Repository methods that do not return `Result`.
   @override
   void runOnNonGenerated(
     CustomLintResolver resolver,
@@ -63,135 +65,10 @@ class RepositoryMethodsReturnResult extends GeneratedSkippingDartLintRule {
     });
   }
 
-  /// Checks if a method declaration returns Result<T> or Future<Result<T>>.
+  /// Reports members that violate the shared Result return contract.
   void _checkMethod(MethodDeclaration method, DiagnosticReporter reporter) {
-    // Excluir constructors - verificar nombre de método contra nombre de clase padre
-    final parent = method.parent;
-    if (parent is ClassDeclaration) {
-      if (method.name.lexeme == parent.name.lexeme) {
-        return; // Es un constructor
-      }
-    }
-
-    // Método más robusto: verificar si no tiene tipo de retorno (característica de constructors)
-    if (method.returnType == null && method.name.lexeme[0].toUpperCase() == method.name.lexeme[0]) {
-      return; // Probablemente un constructor
-    }
-
-    // Excluir métodos privados
-    final methodName = method.name.lexeme;
-    if (methodName.startsWith('_')) {
-      return;
-    }
-
-    // Excluir métodos abstractos (solo declaraciones de interface)
-    if (method.isAbstract) {
-      return;
-    }
-
-    // Excluir getters síncronos (sin Future)
-    if (method.isGetter) {
-      final returnType = method.returnType;
-      if (returnType == null || !_isFutureType(returnType)) {
-        return;
-      }
-    }
-
-    // Excluir métodos que retornan void o Future<void>
-    final returnType = method.returnType;
-    if (returnType == null) {
-      return; // Sin tipo de retorno explícito, asumir válido
-    }
-
-    if (_isVoidOrFutureVoid(returnType)) {
-      return;
-    }
-
-    // Excluir métodos con @override de Object (toString, hashCode, ==)
-    if (_isObjectOverride(method)) {
-      return;
-    }
-
-    // Verificar si retorna Result<T> o Future<Result<T>>
-    if (!_returnsResult(returnType)) {
+    if (violatesResultReturn(method, checkAbstract: false)) {
       reporter.atNode(method, _code);
     }
-  }
-
-  /// Checks if the return type is void or Future<void>.
-  bool _isVoidOrFutureVoid(TypeAnnotation returnType) {
-    if (returnType is NamedType) {
-      final typeName = returnType.name.lexeme;
-
-      // void directo
-      if (typeName == 'void') {
-        return true;
-      }
-
-      // Future<void>
-      if (typeName == 'Future') {
-        final typeArgs = returnType.typeArguments?.arguments;
-        if (typeArgs != null && typeArgs.isNotEmpty) {
-          final firstArg = typeArgs.first;
-          if (firstArg is NamedType &&
-              firstArg.name.lexeme == 'void') {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /// Checks if the return type is Future<...>.
-  bool _isFutureType(TypeAnnotation returnType) {
-    if (returnType is NamedType) {
-      return returnType.name.lexeme == 'Future';
-    }
-    return false;
-  }
-
-  /// Checks if the method overrides Object methods (toString, hashCode, ==).
-  bool _isObjectOverride(MethodDeclaration method) {
-    final methodName = method.name.lexeme;
-    final objectMethods = {'toString', 'hashCode', 'noSuchMethod'};
-
-    if (objectMethods.contains(methodName)) {
-      return true;
-    }
-
-    // Operador ==
-    if (method.isOperator && methodName == '==') {
-      return true;
-    }
-
-    return false;
-  }
-
-  /// Checks if the return type is Result<T> or Future<Result<T>>.
-  bool _returnsResult(TypeAnnotation returnType) {
-    if (returnType is NamedType) {
-      final typeName = returnType.name.lexeme;
-
-      // Result<T> directo
-      if (typeName == 'Result') {
-        return true;
-      }
-
-      // Future<Result<T>>
-      if (typeName == 'Future') {
-        final typeArgs = returnType.typeArguments?.arguments;
-        if (typeArgs != null && typeArgs.isNotEmpty) {
-          final firstArg = typeArgs.first;
-          if (firstArg is NamedType &&
-              firstArg.name.lexeme == 'Result') {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
   }
 }

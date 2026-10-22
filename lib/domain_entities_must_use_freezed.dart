@@ -3,8 +3,10 @@ import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
-/// A lint rule that enforces the use of @freezed annotation on domain entities.
-/// Entities in domain layer must use @freezed to guarantee immutability and pattern matching.
+/// Freezed convention: requires `@freezed`/`@Freezed` on concrete public classes
+/// in `/domain/entities/` and `/domain/value_objects/`. Enabled by default;
+/// projects that do not use Freezed disable it. Annotation spelling does not
+/// prove deep immutability.
 class DomainEntitiesMustUseFreezed extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [DomainEntitiesMustUseFreezed].
   const DomainEntitiesMustUseFreezed() : super(code: _code);
@@ -58,10 +60,7 @@ class DomainEntitiesMustUseFreezed extends GeneratedSkippingDartLintRule {
       });
 
       if (!hasFreezed) {
-        reporter.atNode(
-          node,
-          _code,
-        );
+        reporter.atNode(node, _code);
       }
     });
   }

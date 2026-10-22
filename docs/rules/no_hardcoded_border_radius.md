@@ -1,85 +1,40 @@
 <!-- example-scope: isolated no_hardcoded_border_radius -->
 
-> **Example contract: `no_hardcoded_border_radius` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+> **Example contract: `no_hardcoded_border_radius` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
-# `no_hardcoded_border_radius`
+# no_hardcoded_border_radius
 
-Prevents using `BorderRadius.circular(n)` with a literal value that has a named
-spacing token in `AppSpacing`.
+**Default severity**: info. Enabled by default.
 
-Hardcoded radius values bypass the design-token system. When a token exists for
-a value, it must be used so that radius changes propagate uniformly.
+## What it detects
 
-## What it reports
+`BorderRadius.circular` calls with a single integer literal `6`, `12` or `16` in files matching the include globs and not the exclude globs. The message names `AppSpacing.radiusSm`, `radiusMd` or `radiusLg` respectively.
 
-Reports `BorderRadius.circular(n)` calls where `n` is one of the following
-**exact integer literals** that have a corresponding `AppSpacing` token:
+## Why
 
-| Literal | Required token |
-|---------|----------------|
-| `6`     | `AppSpacing.radiusSm` |
-| `12`    | `AppSpacing.radiusMd` |
-| `16`    | `AppSpacing.radiusLg` |
+Token radii keep corner shapes consistent and changeable in one place.
 
-Messages are value-specific, e.g.:
-
-> Usa AppSpacing.radiusMd en lugar de BorderRadius.circular(12)
-
-## Default scope
-
-Included:
-- `**/presentation/**`
-
-Excluded (hardcoded defaults):
-- `**/theme/**` — token definition files are exempt
-- `**/*_painter.dart` — branding/canvas painters are exempt
-- `**/test/**`, `**/tests/**`, `**/*_test.dart`
-
-## Configuration
-
-```yaml
-custom_lint:
-  rules:
-    - no_hardcoded_border_radius:
-        include_globs:
-          - "**/presentation/**"
-        exclude_globs:
-          - "**/theme/**"
-          - "**/*_painter.dart"
-          - "**/test/**"
-          - "**/*_test.dart"
-```
-
-## Examples
+## Example
 
 ```dart
-// ❌ BAD
-BorderRadius.circular(6)   // → use AppSpacing.radiusSm
-BorderRadius.circular(12)  // → use AppSpacing.radiusMd
-BorderRadius.circular(16)  // → use AppSpacing.radiusLg
+// BAD
+BorderRadius.circular(12)
+```
 
-// ✅ GOOD
-BorderRadius.circular(AppSpacing.radiusSm)
+```dart
+// GOOD
 BorderRadius.circular(AppSpacing.radiusMd)
-BorderRadius.circular(AppSpacing.radiusLg)
-BorderRadius.circular(8)   // no token for 8 → not flagged
-BorderRadius.circular(20)  // no token for 20 → not flagged
 ```
 
-## Expected false positives / false negatives
+## Disable if
 
-- Values with no token (e.g. `8`, `10`, `20`) are never reported.
-- `BorderRadius.only(...)`, `BorderRadius.all(...)` and other constructors are
-  out of scope — only `BorderRadius.circular` is checked.
+Your project has no `AppSpacing` radius tokens or uses other token values.
 
-## Testing guide (external project)
+## Options
 
-1. Enable the rule in `analysis_options.yaml`.
-2. Add `BorderRadius.circular(12)` inside a widget in `lib/presentation/screens/` and run:
+Sibling keys `include_globs` (default `["**/presentation/**"]`) and `exclude_globs` (default `**/theme/**`, `**/*_painter.dart`, `**/test/**`, `**/tests/**`, `**/*_test.dart`). Providing a list replaces its default.
 
-```bash
-dart run custom_lint
-```
+## Limits
 
-3. Confirm the warning appears with the message pointing to `AppSpacing.radiusMd`.
-4. Confirm `BorderRadius.circular(8)` produces no warning.
+- Only the three integer values; doubles (`12.0`), other values, `Radius.circular` and `BorderRadius.all` are not reported.
+- The token names in the message are fixed.

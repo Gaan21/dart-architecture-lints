@@ -1,59 +1,44 @@
 <!-- example-scope: isolated avoid_scattered_401_handling -->
 
-> **Example contract: `avoid_scattered_401_handling` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+> **Example contract: `avoid_scattered_401_handling` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
-# `avoid_scattered_401_handling`
+# avoid_scattered_401_handling
 
-Prevents 401 / unauthorized status-code checks outside of the designated
-authentication boundary classes.
+**Default severity**: info. Enabled by default.
 
-Scattered `statusCode == 401` checks across the codebase lead to inconsistent
-token-refresh logic, duplicated retry flows, and hard-to-audit security
-behaviour. All 401 handling must live in `AuthInterceptor` or `AuthService`.
+## What it detects
 
-## What it reports
+Equality comparisons between an expression named `statusCode` (identifier, property or prefixed) and the integer literal `401`, in either order, outside classes named `AuthInterceptor` or `AuthService`. Files with `/test/` in their path are skipped.
 
-Reports any `BinaryExpression` of the form `statusCode == 401` (or
-`401 == statusCode`) that appears outside of a class named `AuthInterceptor`
-or `AuthService`.
+## Why
 
-Message:
+Unauthorized handling (refresh, logout, redirect) should have one owner; scattered branches drift and double-handle the same response.
 
-> 401 handling must be centralized in AuthInterceptor/AuthService. Avoid scattered authentication logic.
-
-## Allowed classes
-
-| Class | Reason |
-|-------|--------|
-| `AuthInterceptor` | HTTP interceptor — the right place for auth recovery |
-| `AuthService` | Auth domain service — may inspect raw status codes |
-
-## Examples
+## Example
 
 ```dart
-// ❌ BAD — 401 check inside a repository
-class UserRepository {
-  Future<User> getUser() async {
-    final response = await client.get('/user');
-    if (response.statusCode == 401) { // reported
-      await refreshToken();
-    }
-  }
-}
-
-// ✅ GOOD — centralized in the interceptor
-class AuthInterceptor {
-  Future<Response> onResponse(Response response) async {
-    if (response.statusCode == 401) { // allowed
-      return await _refreshAndRetry(response);
-    }
-    return response;
-  }
+// BAD
+if (response.statusCode == 401) {
+  await session.logout();
 }
 ```
 
-## Notes
+```dart
+// GOOD
+class AuthInterceptor {
+  bool isUnauthorized(int statusCode) => statusCode == 401;
+}
+```
 
-- Test files (paths containing `/test/`) are automatically skipped.
-- Generated files are automatically skipped.
-- Detection is name-based (`statusCode` identifier or property access).
+## Disable if
+
+Your central auth handler has a different class name, or the project has no centralized auth boundary.
+
+## Options
+
+None. The allowed class names are fixed.
+
+## Limits
+
+- Only `==` with the literal `401`; constants (`HttpStatus.unauthorized`), `!=`, switch cases and other status names are not detected.
+- Top-level functions and extensions are never allowed locations.

@@ -1,56 +1,43 @@
 <!-- example-scope: isolated avoid_unawaited_ignore_without_reason -->
 
-> **Example contract: `avoid_unawaited_ignore_without_reason` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+> **Example contract: `avoid_unawaited_ignore_without_reason` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
-# `avoid_unawaited_ignore_without_reason`
+# avoid_unawaited_ignore_without_reason
 
-Requires a `// ignore-reason: <explanation>` comment whenever one of the
-unawaited-governance rules is suppressed via `// ignore:`.
+**Default severity**: info. Enabled by default.
 
-Suppressing a lint with `// ignore:` without a reason makes it impossible to
-audit whether the suppression was intentional or accidental. This rule forces
-the developer to document why the async concern is safe to ignore.
+## What it detects
 
-## Covered rules
+`// ignore:` comments listing `avoid_unawaited`, `avoid_async_in_provider_create` or `avoid_async_wrapper_hides_unawaited`, without a `// ignore-reason: <non-empty reason>` comment on the same or the preceding line.
 
-This rule activates when any of the following are suppressed:
+## Why
 
-- `avoid_unawaited`
-- `avoid_async_in_provider_create`
-- `avoid_async_wrapper_hides_unawaited`
+Suppressing a governance rule should leave the reason next to the suppression for reviewers.
 
-## What it reports
-
-Reports any `// ignore: <covered-rule>` comment that does **not** have a
-`// ignore-reason: <non-empty text>` on the same line or the immediately
-preceding line.
-
-Message:
-
-> `// ignore: <regla-unawaited>` sin justificación. Si necesitas suprimir la regla, añade `// ignore-reason: <motivo>` en la misma línea o la línea anterior explicando por qué es seguro ignorar el aviso.
-
-## Examples
+## Example
 
 ```dart
-// ❌ BAD — no reason provided
+// BAD
 // ignore: avoid_unawaited
-fireAndForget();
-
-// ✅ GOOD — reason on the preceding line
-// ignore-reason: notificación fire-and-forget, fallo es no-crítico
-// ignore: avoid_unawaited
-analytics.track(event);
-
-// ✅ GOOD — reason on the same line
-// ignore: avoid_unawaited  ignore-reason: legacy call, migrar en Q3
-legacyService.doThing();
+unawaited(legacy.run());
 ```
 
-## Notes
+```dart
+// GOOD
+// ignore-reason: legacy call, migration tracked separately
+// ignore: avoid_unawaited
+unawaited(legacy.run());
+```
 
-- Applies to the entire project (no path filtering).
-- Generated files are automatically skipped.
-- The `ignore-reason:` text must be non-empty — a bare `// ignore-reason:` is
-  not accepted.
-- Only the three unawaited rules above are monitored; other `// ignore:`
-  suppressions are not affected.
+## Disable if
+
+You disabled the three unawaited rules, or you track suppressions another way.
+
+## Options
+
+None.
+
+## Limits
+
+- `// ignore_for_file:` comments are not checked.
+- Comments after the last token of a file are not scanned.

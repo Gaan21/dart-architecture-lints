@@ -1,21 +1,46 @@
 <!-- example-scope: isolated multiprovider_order -->
 
-> **Example contract: `multiprovider_order` only.** Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md) for executed whole-profile acceptance.
+> **Example contract: `multiprovider_order` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
 # multiprovider_order
 
-Enforces the optional architecture convention `*UiState` providers before
-`*ViewModel` providers. It remains enabled by default and in the architecture
-sample. The style-only sample explicitly deselects it.
+**Default severity**: info. Enabled by default.
 
-Classification uses the provider's first written type argument or recognizable
-construction/identifier in its `create` expression. It checks direct entries in
-a `MultiProvider.providers` list. Spread lists are skipped. Providers with other
-names are not ordered.
+## What it detects
 
-This is a naming contract, not proof of actual dependency order or absence of
-cycles. A passing list still needs dependency review. A project adopting a
-different provider composition contract can explicitly set this rule to false;
-the default is not relaxed automatically.
+In a direct `providers:` list literal of `MultiProvider`, a provider whose role is `UiState` after one whose role is `ViewModel`. The role comes from the first type argument (`ChangeNotifierProvider<SearchUiState>`) or the type created/returned in `create`, by the name suffix `UiState` or `ViewModel`.
 
-See [selection semantics](../configuration.md).
+## Why
+
+View models often read UI-state owners when created; declaring UI state first keeps that dependency available.
+
+## Example
+
+```dart
+// BAD
+MultiProvider(providers: [
+  ChangeNotifierProvider<SearchViewModel>(create: (_) => SearchViewModel()),
+  ChangeNotifierProvider<SearchUiState>(create: (_) => SearchUiState()),
+])
+```
+
+```dart
+// GOOD
+MultiProvider(providers: [
+  ChangeNotifierProvider<SearchUiState>(create: (_) => SearchUiState()),
+  ChangeNotifierProvider<SearchViewModel>(create: (_) => SearchViewModel()),
+])
+```
+
+## Disable if
+
+Your project uses a different composition model or naming, or does not use `provider`.
+
+## Options
+
+None.
+
+## Limits
+
+- It enforces a naming contract, not a dependency graph; review actual dependencies.
+- Lists with spread elements are skipped; providers of other types are not ordered. Only the first offending provider is reported.

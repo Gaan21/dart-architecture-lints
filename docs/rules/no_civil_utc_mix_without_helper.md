@@ -1,100 +1,40 @@
 <!-- example-scope: isolated no_civil_utc_mix_without_helper -->
 
-> **Example contract: `no_civil_utc_mix_without_helper` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or whole-profile acceptance. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
+> **Example contract: `no_civil_utc_mix_without_helper` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
-# `no_civil_utc_mix_without_helper`
+# no_civil_utc_mix_without_helper
 
-Detects risky mixing of civil/date-only values with UTC instant values inside
-mappers/formatters/adapters when no approved helper is used.
+**Default severity**: info. Enabled by default.
 
-This rule uses a dual-evidence strategy to reduce false positives:
+## What it detects
 
-- Civil evidence and instant evidence must appear in the same expression/scope.
-- By default, it warns only on high-risk combinations (comparison,
-  interpolation, merge/combine/compare-like invocations).
-- In `strict_mode: true`, it broadens detection for mixed invocations in the
-  same scope.
+In files matching the include globs (default mappers/formatters/adapters folders): binary expressions with `+`, `==`, `!=`, `<`, `<=`, `>`, `>=`, string interpolations with two or more parts, and calls to `compareTo`, `difference`, `isBefore`, `isAfter`, `isAtSameMomentAs`, `format`, `merge` or `combine`, where one side shows civil-date evidence and the other instant evidence. Evidence comes from names (`date`, `day`, `fecha`, `civil`... versus `timestamp`, `utc`, `time`, `epoch`, `hour`...), instant members (`toUtc`, `millisecondsSinceEpoch`, `hour`...), `DateTime` constructors and parsed literals. Calls inside an invocation matching `helper_whitelist` are skipped.
 
-Message:
+## Why
 
-> Detected civil-date + UTC-instant mix without approved helper.
+A calendar date and a UTC instant mean different things; mixing them silently shifts dates across time zones.
 
-## Default scope
-
-- `**/mappers/**`
-- `**/formatters/**`
-- `**/adapters/**`
-
-Default excludes:
-
-- `**/test/**`
-- `**/tests/**`
-- `**/*_test.dart`
-
-## Configuration
-
-```yaml
-custom_lint:
-  rules:
-    - no_civil_utc_mix_without_helper:
-        include_globs:
-          - "**/mappers/**"
-          - "**/formatters/**"
-          - "**/adapters/**"
-        exclude_globs:
-          - "**/test/**"
-          - "**/*_test.dart"
-        helper_whitelist:
-          - "TimeContract.normalizeCivilDate"
-          - "EmpresaDateTimeFormatter.*"
-        strict_mode: false
-```
-
-## Examples
+## Example
 
 ```dart
-// ❌ BAD
-String mapLabel(String civilDate, DateTime createdAtUtcDateTime) {
-  return 'civil=$civilDate instant=$createdAtUtcDateTime';
-}
-
-// ✅ GOOD (passthrough wrapper, no real mix operation)
-Future<void> saveTask(String civilDate, DateTime timestampUtcDateTime) {
-  return repository.saveTask(civilDate, timestampUtcDateTime);
-}
-
-// ✅ GOOD
-String mapLabel(String civilDate, DateTime createdAtUtcDateTime) {
-  return TimeContract.normalizeCivilDate(civilDate, createdAtUtcDateTime);
-}
+// BAD
+final bool sameDay = workday.date == entry.timestampUtc;
 ```
 
-## Expected false positives / false negatives
-
-- False positive (reduced): simple delegation wrappers and test files are
-  ignored by default.
-- False negative (expected): if naming does not expose civil/UTC intent and no
-  clear risky operation exists, enable `strict_mode` or refine naming.
-
-## Migration tips
-
-1. Standardize naming (`civilDate`, `timestampUtc`, `createdAtDateTime`) so
-   intent is explicit.
-2. Route mixed operations through a dedicated time contract helper.
-3. Add project-approved helpers to `helper_whitelist`.
-4. Keep default excludes for tests; only override when needed.
-5. Enable `strict_mode: true` only after baseline cleanup.
-
-## Testing guide (external project)
-
-1. Enable rule in `analysis_options.yaml`.
-2. Add a mapper mixing `civilDate` + `createdAtUtcDateTime` in interpolation or
-   comparison.
-3. Run:
-
-```bash
-dart run custom_lint
+```dart
+// GOOD
+final bool sameDay = workday.date == TimeContract.normalizeCivilDate(entry.timestampUtc);
 ```
 
-4. Verify lint appears; then wrap logic in whitelisted helper and verify it is
-   no longer reported.
+## Disable if
+
+Your mapping code has no civil-date concept, or naming in your code base produces too many false positives.
+
+## Options
+
+Sibling keys: `include_globs` (default `**/mappers/**`, `**/formatters/**`, `**/adapters/**`), `exclude_globs` (default `**/test/**`, `**/tests/**`, `**/*_test.dart`), `helper_whitelist` (wildcards matching `method`, `Target.method`) and `strict_mode` (default `false`; `true` reports any operator, single-part interpolation and any call).
+
+## Limits
+
+- Naming-based evidence: mixes without civil/instant names or risky operations are not detected; matching names in unrelated code can report.
+- Calls on a target whose arguments are plain identifiers and whose result is returned or used as a statement are treated as pass-through and skipped.

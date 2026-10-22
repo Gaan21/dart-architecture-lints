@@ -1,19 +1,41 @@
 <!-- example-scope: isolated no_local_datetime_constructors -->
 
-> **Example contract: `no_local_datetime_constructors` only.** Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md) for executed whole-profile acceptance.
+> **Example contract: `no_local_datetime_constructors` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
 # no_local_datetime_constructors
 
-Discourages direct clocks and local instant construction. Default behavior keeps
-checks for `DateTime.now()`, unnamed constructors, epoch constructors without
-`isUtc: true`, and ambiguous parse expressions. An injected clock enables
-deterministic tests; selecting this rule does not supply a clock implementation.
+**Default severity**: info. Enabled by default.
 
-Use `civil_date_globs` for explicit civil-calendar files and `clock_globs` for
-clock adapters. These opt-in file scopes are separate: allowing calendar
-construction does not permit direct clocks, and allowing clocks does not permit
-all local constructors. No automatic test/example-directory exemption exists.
-Use `exclude_globs` only when intentionally excluding a file from this rule.
+## What it detects
 
-See [configuration](../configuration.md) for the installed custom_lint option
-syntax and for how this rule differs from data-layer UTC representation checks.
+In files matching the scope: `dart:core` `DateTime.now()`, the unnamed `DateTime(...)` constructor, `fromMillisecondsSinceEpoch`/`fromMicrosecondsSinceEpoch` without a literal `isUtc: true`, and `DateTime.parse(...)` unless the argument is a string literal with `Z` or an offset, or the result is immediately followed by `.toUtc()`. `DateTime.utc(...)` is allowed.
+
+## Why
+
+Local construction depends on the device zone and the real clock. UTC values and an injected clock keep instants consistent and testable.
+
+## Example
+
+```dart
+// BAD
+final DateTime startedAt = DateTime.now();
+```
+
+```dart
+// GOOD
+final DateTime startedAt = clock.now().toUtc();
+```
+
+## Disable if
+
+Your project accepts device-local time and does not inject a clock.
+
+## Options
+
+Sibling keys: `include_globs` (default `["**"]`), `exclude_globs`, `civil_date_globs` (allows the unnamed `DateTime(year, ...)` constructor) and `clock_globs` (allows `DateTime.now()` in clock adapters).
+
+## Limits
+
+- Implemented in `lib/no_datetime_now.dart`; the diagnostic ID differs from the file name.
+- Construction sites only; values from other APIs are not tracked.
+- Scope exceptions are file-level ownership decisions, not proof of correct calendar modeling.

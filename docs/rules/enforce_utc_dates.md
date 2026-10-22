@@ -1,23 +1,40 @@
 <!-- example-scope: isolated enforce_utc_dates -->
 
-> **Example contract: `enforce_utc_dates` only.** Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md) for executed whole-profile acceptance.
+> **Example contract: `enforce_utc_dates` only.** Dart fences are isolated sketches. GOOD labels describe a single-rule contrast, not compilation or acceptance by every rule. Use the [checked runnable sources](../../examples/architecture/README.md) and [coverage matrix](../example_coverage.md).
 
 # enforce_utc_dates
 
-Requires UTC representations for instant construction in the existing data-layer
-path scope. See [time scopes](../configuration.md) for exact include filters and
-explicit civil-calendar/clock exceptions. Defaults preserve instant protection.
+**Default severity**: info. Enabled by default.
 
-`DateTime.utc(...)`, epoch constructors with `isUtc: true`, directly chained
-`toUtc()`, and ISO parse literals with `Z` or an explicit numeric offset are
-accepted. Ambiguous parse strings are reported. Epoch getters such as
-`millisecondsSinceEpoch` represent the same instant regardless of zone; they do
-not require `toUtc()`.
+## What it detects
 
-These are construction-site checks, not dataflow proof that arbitrary DateTime
-variables are UTC. Civil calendar dates should be modeled separately and their
-unnamed constructors allowed only in explicitly reviewed `civil_date_globs`.
-Civil exceptions do not permit clocks or ambiguous parsing.
+In files with a path segment `data`, `datasource(s)`, `repository`/`repositories`, `infrastructure`, `models` or `entities`: `dart:core` `DateTime` constructors other than `DateTime.utc`, and `DateTime.parse` calls, unless the result is immediately converted with `.toUtc()`. Epoch constructors with `isUtc: true` and parses of string literals with an explicit `Z` or offset are allowed.
 
-The separate organization-zone display, civil/instant mix and device-local
-presentation rules remain selected by the architecture and legacy samples.
+## Why
+
+Instants stored or exchanged as local time shift with the device zone. UTC is unambiguous; civil dates belong in explicitly scoped files.
+
+## Example
+
+```dart
+// BAD
+final DateTime createdAt = DateTime.parse(json);
+```
+
+```dart
+// GOOD
+final DateTime createdAt = DateTime.parse(json).toUtc();
+```
+
+## Disable if
+
+Your data layer stores civil (calendar) values in these folders without separate scoping, or another time abstraction handles zones.
+
+## Options
+
+Sibling keys: `include_globs` (default `["**"]`, cannot widen the data-layer segment filter), `exclude_globs`, `civil_date_globs` (allows the unnamed `DateTime(...)` constructor) and `clock_globs` (allows `DateTime.now()`).
+
+## Limits
+
+- Construction sites only; it does not prove that arbitrary variables hold UTC values.
+- A parse argument that is not a string literal is reported unless converted.
