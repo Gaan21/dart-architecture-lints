@@ -1,6 +1,8 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/type.dart';
 
+import 'generated_skipping_dart_lint_rule.dart';
+
 /// How a member's return type relates to the Result outcome contract.
 enum ResultReturnShape {
   /// `Result`, or `Future`/`FutureOr`/`Stream` of `Result` (aliases resolved).
@@ -85,7 +87,7 @@ bool violatesResultReturn(
 }) {
   final name = method.name.lexeme;
   if (name.startsWith('_') || method.isSetter) return false;
-  if (!checkAbstract && method.isAbstract) return false;
+  if (!checkAbstract && isAbstractMethod(method)) return false;
   if (const {'toString', 'noSuchMethod', 'hashCode'}.contains(name)) {
     return false;
   }

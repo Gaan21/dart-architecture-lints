@@ -1,17 +1,19 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that detects business logic patterns in Widgets.
 /// Enforces MVVM separation: Widgets only render, ViewModels/UiState handle logic.
 class NoBusinessLogicInWidgets extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoBusinessLogicInWidgets].
-  const NoBusinessLogicInWidgets() : super(code: _code);
+  NoBusinessLogicInWidgets() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'no_business_logic_in_widgets',
+    'No mezcles lógica de negocio en Widgets; delega en ViewModel o UiState. Widgets solo deben renderizar datos ya procesados.',
     correctionMessage:
         'Mueve el filtrado/cálculo a tu ViewModel o UiState y expone datos listos para renderizar.\n'
         'Ejemplo:\n'
@@ -35,19 +37,16 @@ class NoBusinessLogicInWidgets extends GeneratedSkippingDartLintRule {
         '      return OrdersList(filtered);\n'
         '    }\n'
         '  }',
-    name: 'no_business_logic_in_widgets',
-    problemMessage:
-        'No mezcles lógica de negocio en Widgets; delega en ViewModel o UiState. Widgets solo deben renderizar datos ya procesados.',
   );
 
   /// Executes the lint rule to detect business logic in Widgets.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final uri = resolver.source.uri;
+    final uri = resolver.uri;
     final path = uri.path;
 
     // Solo aplicar en presentation/screens/ y presentation/widgets/
@@ -63,7 +62,7 @@ class NoBusinessLogicInWidgets extends GeneratedSkippingDartLintRule {
       }
 
       // Verificar métodos build, callbacks, y initState
-      for (final member in node.members) {
+      for (final member in node.body.members) {
         if (member is MethodDeclaration) {
           _checkMethod(member, reporter);
         }
@@ -165,7 +164,8 @@ class _BusinessLogicVisitor extends RecursiveAstVisitor<void> {
       }
 
       if (propertyName != null &&
-          (propertyName.endsWith('UseCase') || propertyName.endsWith('useCase'))) {
+          (propertyName.endsWith('UseCase') ||
+              propertyName.endsWith('useCase'))) {
         reporter.atNode(node, code);
       }
     }

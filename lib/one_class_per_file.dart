@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that enforces one public type per file for better code organization.
@@ -8,22 +8,20 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// Prohibits independent enums, mixins, and unrelated classes.
 class OneClassPerFileLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [OneClassPerFileLint].
-  const OneClassPerFileLint() : super(code: _code);
+  OneClassPerFileLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    correctionMessage:
-        'Move this type to its own file. Only the main class and its direct subclasses should share a file for better organization.',
-    name: 'one_class_per_file',
-    problemMessage:
-        'Multiple independent public types in one file violates the single responsibility principle. Each file should contain one primary type.',
+    'one_class_per_file',
+    'Multiple independent public types in one file violates the single responsibility principle. Each file should contain one primary type.',
+    correctionMessage: 'Move this type to its own file. Only the main class and its direct subclasses should share a file for better organization.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addCompilationUnit((CompilationUnit node) {
       final publicTypes = <Declaration>[];
@@ -45,11 +43,11 @@ class OneClassPerFileLint extends GeneratedSkippingDartLintRule {
   /// Checks if a declaration is a public type (class, enum, mixin).
   bool _isPublicTypeDeclaration(Declaration declaration) {
     if (declaration is ClassDeclaration) {
-      return !declaration.name.lexeme.startsWith('_');
+      return !declaration.namePart.typeName.lexeme.startsWith('_');
     }
 
     if (declaration is EnumDeclaration) {
-      return !declaration.name.lexeme.startsWith('_');
+      return !declaration.namePart.typeName.lexeme.startsWith('_');
     }
 
     if (declaration is MixinDeclaration) {
@@ -61,7 +59,9 @@ class OneClassPerFileLint extends GeneratedSkippingDartLintRule {
 
   /// Analyzes multiple public types and reports violations.
   void _analyzeMultiplePublicTypes(
-      List<Declaration> types, DiagnosticReporter reporter) {
+    List<Declaration> types,
+    DiagnosticReporter reporter,
+  ) {
     // Find the main class (largest class, or first class if no classes)
     ClassDeclaration? mainClass = _findMainClass(types);
 
@@ -141,6 +141,6 @@ class OneClassPerFileLint extends GeneratedSkippingDartLintRule {
 
     // Check if it directly extends the main class
     final superClassName = extendsClause.superclass.name.lexeme;
-    return superClassName == mainClass.name.lexeme;
+    return superClassName == mainClass.namePart.typeName.lexeme;
   }
 }

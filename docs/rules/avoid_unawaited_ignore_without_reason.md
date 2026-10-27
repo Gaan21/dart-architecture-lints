@@ -10,7 +10,7 @@
 
 ## What it detects
 
-`// ignore:` comments listing `avoid_unawaited`, `avoid_async_in_provider_create` or `avoid_async_wrapper_hides_unawaited`, without a `// ignore-reason: <non-empty reason>` comment on the same or the preceding line.
+`// ignore:` comments listing `avoid_unawaited`, `avoid_async_in_provider_create` or `avoid_async_wrapper_hides_unawaited`, without a `// ignore-reason: <non-empty reason>` comment on the same or the preceding line. A rule may be named bare or with the `dart_architecture_lints/` prefix that suppression requires.
 
 ## Why
 
@@ -20,14 +20,14 @@ Suppressing a governance rule should leave the reason next to the suppression fo
 
 ```dart
 // BAD
-// ignore: avoid_unawaited
+// ignore: dart_architecture_lints/avoid_unawaited
 unawaited(legacy.run());
 ```
 
 ```dart
 // GOOD
 // ignore-reason: legacy call, migration tracked separately
-// ignore: avoid_unawaited
+// ignore: dart_architecture_lints/avoid_unawaited
 unawaited(legacy.run());
 ```
 

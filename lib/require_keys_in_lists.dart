@@ -1,29 +1,27 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that requires keys in dynamic ListView and GridView items.
 /// When ListView.builder or GridView.builder items don't have keys, this rule suggests adding them.
 class RequireKeysInListsLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [RequireKeysInListsLint].
-  const RequireKeysInListsLint() : super(code: _code);
+  RequireKeysInListsLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    correctionMessage:
-        'Use a stable ValueKey based on item identity (or ObjectKey when object identity is stable). Do not create a fresh UniqueKey on each build.',
-    name: 'require_keys_in_lists',
-    problemMessage:
-        'Consider stable item keys when list items can move, be inserted, or be removed. Keys preserve identity; they do not prevent rebuilds.',
+    'require_keys_in_lists',
+    'Consider stable item keys when list items can move, be inserted, or be removed. Keys preserve identity; they do not prevent rebuilds.',
+    correctionMessage: 'Use a stable ValueKey based on item identity (or ObjectKey when object identity is stable). Do not create a fresh UniqueKey on each build.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addInstanceCreationExpression((
       InstanceCreationExpression node,
@@ -51,9 +49,8 @@ class RequireKeysInListsLint extends GeneratedSkippingDartLintRule {
 
     for (final argument in arguments) {
       // Look for itemBuilder named parameter
-      if (argument is NamedExpression &&
-          argument.name.label.name == 'itemBuilder') {
-        _analyzeItemBuilderFunction(argument.expression, reporter);
+      if (argument is NamedArgument && argument.name.lexeme == 'itemBuilder') {
+        _analyzeItemBuilderFunction(argument.argumentExpression, reporter);
         break;
       }
     }
@@ -87,7 +84,7 @@ class RequireKeysInListsLint extends GeneratedSkippingDartLintRule {
     // Check if it already has a key parameter
     final arguments = expression.argumentList.arguments;
     for (final argument in arguments) {
-      if (argument is NamedExpression && argument.name.label.name == 'key') {
+      if (argument is NamedArgument && argument.name.lexeme == 'key') {
         return false; // Already has a key
       }
     }

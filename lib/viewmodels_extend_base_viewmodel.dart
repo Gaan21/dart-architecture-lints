@@ -1,16 +1,18 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that enforces ViewModels to extend BaseViewModel or BaseViewModelWithEffects.
-/// ViewModels must use typed state pattern with UiState<T> for consistent state management.
+/// ViewModels must use typed state pattern with `UiState<T>` for consistent state management.
 class ViewModelsExtendBaseViewModel extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [ViewModelsExtendBaseViewModel].
-  const ViewModelsExtendBaseViewModel() : super(code: _code);
+  ViewModelsExtendBaseViewModel() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'viewmodels_extend_base_viewmodel',
+    'Los ViewModels deben extender BaseViewModel<T> o BaseViewModelWithEffects<T> para estado tipado y manejo consistente.',
     correctionMessage:
         'Cambia "extends ChangeNotifier" por "extends BaseViewModel<TipoDato>" y usa setState(UiState.data(value)) para actualizar estado.\n'
         'Para ViewModels con efectos efímeros (navegación, snackbars), usa "extends BaseViewModelWithEffects<TipoDato>".\n'
@@ -25,19 +27,16 @@ class ViewModelsExtendBaseViewModel extends GeneratedSkippingDartLintRule {
         '      handleResult(result); // Auto-actualiza a data/error\n'
         '    }\n'
         '  }',
-    name: 'viewmodels_extend_base_viewmodel',
-    problemMessage:
-        'Los ViewModels deben extender BaseViewModel<T> o BaseViewModelWithEffects<T> para estado tipado y manejo consistente.',
   );
 
   /// Executes the lint rule to detect ViewModels that do not extend BaseViewModel.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final uri = resolver.source.uri;
+    final uri = resolver.uri;
     final path = uri.path;
 
     // Solo aplicar en presentation/viewModels/ (incluyendo subcarpetas)
@@ -52,7 +51,7 @@ class ViewModelsExtendBaseViewModel extends GeneratedSkippingDartLintRule {
       }
 
       // Solo verificar clases que terminan en "ViewModel"
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       if (!className.endsWith('ViewModel')) {
         return;
       }
@@ -72,10 +71,7 @@ class ViewModelsExtendBaseViewModel extends GeneratedSkippingDartLintRule {
       final superclassName = extendsClause.superclass.name.lexeme;
 
       // Aceptar BaseViewModel y BaseViewModelWithEffects
-      final acceptedBaseClasses = {
-        'BaseViewModel',
-        'BaseViewModelWithEffects',
-      };
+      final acceptedBaseClasses = {'BaseViewModel', 'BaseViewModelWithEffects'};
 
       if (!acceptedBaseClasses.contains(superclassName)) {
         // Si extiende ChangeNotifier directamente u otra clase, reportar error

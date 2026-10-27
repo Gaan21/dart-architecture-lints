@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 import 'package:dart_architecture_lints/timezone_safety_utils.dart';
 
@@ -35,35 +35,26 @@ import 'package:dart_architecture_lints/timezone_safety_utils.dart';
 /// variables from enclosing function scopes are resolved correctly.
 class NoUtcTimeFormatWithoutEmpresaHelperLint
     extends GeneratedSkippingDartLintRule {
-  const NoUtcTimeFormatWithoutEmpresaHelperLint({
+  NoUtcTimeFormatWithoutEmpresaHelperLint({
     this.config = const NoUtcTimeFormatConfig(),
   }) : super(code: _code);
 
   final NoUtcTimeFormatConfig config;
 
   static const _code = LintCode(
-    name: 'no_utc_time_format_without_empresa_helper',
-    problemMessage:
-        'DateFormat time-pattern used without an approved empresa time helper. '
+    'no_utc_time_format_without_empresa_helper',
+    'DateFormat time-pattern used without an approved empresa time helper. '
         'This can display UTC time instead of empresa local time.',
     correctionMessage:
         'Wrap the DateTime argument with an approved helper before formatting, '
         'e.g. DateFormat("HH:mm").format(empresaTimeService.toEmpresaLocalTime(timestamp)).',
   );
 
-  static NoUtcTimeFormatWithoutEmpresaHelperLint fromConfigs(
-      CustomLintConfigs configs) {
-    final options = readRuleOptions(configs, _code.name);
-    return NoUtcTimeFormatWithoutEmpresaHelperLint(
-      config: NoUtcTimeFormatConfig.fromJson(options),
-    );
-  }
-
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     final path = normalizeLintPath(resolver.path);
     if (!config.matchesPath(path)) return;
@@ -251,8 +242,8 @@ class NoUtcTimeFormatWithoutEmpresaHelperLint
     while (current != null) {
       if (current is StringInterpolation) {
         return current.elements.whereType<InterpolationString>().any(
-              (s) => s.value.contains('UTC'),
-            );
+          (s) => s.value.contains('UTC'),
+        );
       }
       if (current is FunctionBody ||
           current is MethodDeclaration ||
@@ -294,9 +285,9 @@ class NoUtcTimeFormatWithoutEmpresaHelperLint
         .toSet();
   }
 
-  Expression _unwrapArgument(Expression expression) {
-    if (expression is NamedExpression) return expression.expression;
-    return expression;
+  Expression _unwrapArgument(Argument expression) {
+    // A named argument unwraps to its value; a positional one is itself.
+    return expression.argumentExpression;
   }
 }
 
@@ -368,9 +359,9 @@ bool isTimeFormatString(String pattern) {
   return RegExp(r'[HhkKjJ]').hasMatch(withoutQuotes);
 }
 
-Expression _unwrapExpr(Expression expression) {
-  if (expression is NamedExpression) return expression.expression;
-  return expression;
+Expression _unwrapExpr(Argument expression) {
+  // A named argument unwraps to its value; a positional one is itself.
+  return expression.argumentExpression;
 }
 
 const _timeNamedConstructors = {
@@ -418,31 +409,6 @@ class NoUtcTimeFormatConfig {
     this.allowUtcDebugContext = false,
   });
 
-  factory NoUtcTimeFormatConfig.fromJson(Map<String, Object?> json) {
-    return NoUtcTimeFormatConfig(
-      includeGlobs: readStringListOption(
-        json,
-        'include_globs',
-        fallback: _defaultIncludes,
-      ),
-      excludeGlobs: readStringListOption(
-        json,
-        'exclude_globs',
-        fallback: _defaultExcludes,
-      ),
-      allowedWrappers: readStringListOption(
-        json,
-        'allowed_wrappers',
-        fallback: _defaultAllowedWrappers,
-      ),
-      allowUtcDebugContext: readBoolOption(
-        json,
-        'allow_utc_debug_context',
-        fallback: false,
-      ),
-    );
-  }
-
   static const _defaultIncludes = [
     '**/presentation/**',
     '**/screens/**',
@@ -482,8 +448,9 @@ class NoUtcTimeFormatConfig {
     if (allowedWrappers.isEmpty) return false;
     if (arg is! MethodInvocation) return false;
     final candidates = _callCandidates(arg);
-    return candidates
-        .any((candidate) => matchesAnyWildcard(candidate, allowedWrappers));
+    return candidates.any(
+      (candidate) => matchesAnyWildcard(candidate, allowedWrappers),
+    );
   }
 
   List<String> _callCandidates(MethodInvocation node) {

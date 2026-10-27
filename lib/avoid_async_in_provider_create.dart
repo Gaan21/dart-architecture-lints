@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Lint rule that detects `unawaited(...)` calls executed directly inside
@@ -22,7 +22,7 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// }
 /// ```
 ///
-/// **Detection heuristic (conservative):** looks for a [NamedExpression] named
+/// **Detection heuristic (conservative):** looks for a [NamedArgument] named
 /// `create` or `update` whose parent [InstanceCreationExpression] has a type
 /// name containing "Provider". This covers the most common provider packages
 /// (provider, riverpod-style wrappers) while avoiding false positives from
@@ -31,12 +31,11 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// **Limitation:** custom Provider wrappers with different outer class names
 /// (e.g. `AppState.create(...)`) are NOT detected by this heuristic.
 class AvoidAsyncInProviderCreateLint extends GeneratedSkippingDartLintRule {
-  const AvoidAsyncInProviderCreateLint() : super(code: _code);
+  AvoidAsyncInProviderCreateLint() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'avoid_async_in_provider_create',
-    problemMessage:
-        'Async en build-time prohibido: `unawaited(...)` dentro de '
+    'avoid_async_in_provider_create',
+    'Async en build-time prohibido: `unawaited(...)` dentro de '
         'Provider.create puede mutar estado antes de que el árbol de '
         'widgets esté listo.',
     correctionMessage:
@@ -49,9 +48,9 @@ class AvoidAsyncInProviderCreateLint extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addMethodInvocation((MethodInvocation node) {
       if (node.methodName.name != 'unawaited') return;
@@ -76,7 +75,7 @@ class AvoidAsyncInProviderCreateLint extends GeneratedSkippingDartLintRule {
   ///
   /// Walks ancestors from innermost to outermost:
   /// - If we first hit `addPostFrameCallback` → we are inside post-frame → safe.
-  /// - If we first hit a `create`/`update` [NamedExpression] belonging to a
+  /// - If we first hit a `create`/`update` [NamedArgument] belonging to a
   ///   Provider [InstanceCreationExpression] → unsafe.
   bool _isInProviderCreateWithoutPostFrame(AstNode node) {
     AstNode? current = node.parent;
@@ -88,8 +87,8 @@ class AvoidAsyncInProviderCreateLint extends GeneratedSkippingDartLintRule {
       }
 
       // Check for Provider.create / Provider.update named argument
-      if (current is NamedExpression) {
-        final argName = current.name.label.name;
+      if (current is NamedArgument) {
+        final argName = current.name.lexeme;
         if (argName == 'create' || argName == 'update') {
           final argList = current.parent;
           if (argList is ArgumentList) {

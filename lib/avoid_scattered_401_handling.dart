@@ -2,29 +2,27 @@ import 'dart:collection';
 
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Enforces centralized 401 handling in authentication boundary classes only.
 class AvoidScattered401HandlingLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [AvoidScattered401HandlingLint].
-  const AvoidScattered401HandlingLint() : super(code: _code);
+  AvoidScattered401HandlingLint() : super(code: _code);
 
   static const _allowedClasses = {'AuthInterceptor', 'AuthService'};
 
   static const _code = LintCode(
-    name: 'avoid_scattered_401_handling',
-    problemMessage:
-        '401 handling must be centralized in AuthInterceptor/AuthService. Avoid scattered authentication logic.',
-    correctionMessage:
-        'Move unauthorized handling to AuthInterceptor/AuthService and keep callers free of auth-recovery branches.',
+    'avoid_scattered_401_handling',
+    '401 handling must be centralized in AuthInterceptor/AuthService. Avoid scattered authentication logic.',
+    correctionMessage: 'Move unauthorized handling to AuthInterceptor/AuthService and keep callers free of auth-recovery branches.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     if (_isTestFile(resolver.path)) return;
 
@@ -57,7 +55,7 @@ class AvoidScattered401HandlingLint extends GeneratedSkippingDartLintRule {
   bool _isInsideAllowedClass(AstNode node) {
     final classNode = node.thisOrAncestorOfType<ClassDeclaration>();
     if (classNode == null) return false;
-    return _allowedClasses.contains(classNode.name.lexeme);
+    return _allowedClasses.contains(classNode.namePart.typeName.lexeme);
   }
 
   bool _is401Comparison(BinaryExpression node) {

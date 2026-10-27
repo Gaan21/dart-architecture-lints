@@ -2,18 +2,18 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that enforces the use of 'final' over 'var' for immutable variables.
 class EnforceFinalVariablesLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [EnforceFinalVariablesLint].
-  const EnforceFinalVariablesLint() : super(code: _code);
+  EnforceFinalVariablesLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    name: 'enforce_final_variables',
-    problemMessage: 'This local variable is never reassigned.',
+    'enforce_final_variables',
+    'This local variable is never reassigned.',
     correctionMessage:
         'Use final for a local binding that is never reassigned.',
   );
@@ -21,9 +21,9 @@ class EnforceFinalVariablesLint extends GeneratedSkippingDartLintRule {
   /// Executes the lint rule to detect inappropriate uses of 'var'.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addVariableDeclarationList((VariableDeclarationList node) {
       // Only check 'var' declarations

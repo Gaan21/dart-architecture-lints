@@ -1,65 +1,91 @@
 # Configuration details
 
-All 52 rules are enabled by default. A project disables individual rules and sets
-options in its own `analysis_options.yaml`. There are no presets or profiles, and
-installing or updating this package never changes a project's configuration.
+All 52 rules are enabled by default. A project disables individual rules in its
+own `analysis_options.yaml`. There are no presets or profiles, and installing or
+updating this package never changes a project's configuration.
 
-## Syntax (custom_lint 0.8.1)
+Since 0.1.0 this package is an analyzer plugin (`analysis_server_plugin`), run
+by `dart analyze`, `flutter analyze` and the IDE. It needs Dart 3.13 or later
+(the Flutter release that ships it). `custom_lint` is no longer used.
 
-```yaml
-analyzer:
-  plugins:
-    - custom_lint
-  errors:
-    no_bang_operator: warning
-custom_lint:
-  rules:
-    - no_late_keyword: false
-    - require_explicit_types: true
-      policy: selective
-      local_names: ["*Boundary", "payload"]
-```
-
-- `rules` is a **list**. `- rule_name: false` disables one rule.
-- Options are sibling keys after the rule key in the same list entry. A nested
-  options map (`- rule: {policy: selective}`) is not read by this version.
-- Severity overrides belong in `analyzer.errors`; values such as
-  `rule_name: warning` under `custom_lint.rules` are not severities.
-- `enable_all_lint_rules: false` disables every rule not listed with `true`;
-  omit it to keep the default (all enabled).
-- `dart run custom_lint` 0.8.1 treats warnings **and infos** as fatal by default.
-  Use `--no-fatal-infos` or `--no-fatal-warnings` only as a deliberate CI policy.
-
-## Rules with options
-
-Each rule document lists its option keys and defaults. Providing a list option
-replaces its default; an empty list matches nothing.
-
-| Rule | Options |
-|------|---------|
-| [`require_explicit_types`](rules/require_explicit_types.md) | `policy` (`strict` default, `selective`), `local_names` |
-| [`enforce_utc_dates`](rules/enforce_utc_dates.md) | `include_globs`, `exclude_globs`, `civil_date_globs`, `clock_globs` |
-| [`no_local_datetime_constructors`](rules/no_local_datetime_constructors.md) | `include_globs`, `exclude_globs`, `civil_date_globs`, `clock_globs` |
-| [`logger_context_matches_scope`](rules/logger_context_matches_scope.md) | `include_globs`, `exclude_globs`, `logger_names`, `methods`, `context_argument` |
-| [`no_domain_entities_in_presentation_ui`](rules/no_domain_entities_in_presentation_ui.md) | `project_package_name`, `include_globs`, `allowed_file_globs` |
-| [`no_device_local_in_presentation`](rules/no_device_local_in_presentation.md) | `include_globs`, `exclude_globs`, `allowed_receivers`, `allowed_wrappers` |
-| [`no_civil_utc_mix_without_helper`](rules/no_civil_utc_mix_without_helper.md) | `include_globs`, `exclude_globs`, `helper_whitelist`, `strict_mode` |
-| [`no_utc_time_format_without_empresa_helper`](rules/no_utc_time_format_without_empresa_helper.md) | `include_globs`, `exclude_globs`, `allowed_wrappers`, `allow_utc_debug_context` |
-| [`no_hardcoded_color_literal`](rules/no_hardcoded_color_literal.md) | `include_globs`, `exclude_globs` |
-| [`no_hardcoded_border_radius`](rules/no_hardcoded_border_radius.md) | `include_globs`, `exclude_globs` |
-
-Defaults are generic: `logger_context_matches_scope` checks `**/lib/**`, and
-`no_domain_entities_in_presentation_ui` checks imports of the analyzed package's
-own `domain/entities`. Override them only for a different layout or logging API:
+## Syntax
 
 ```yaml
-custom_lint:
-  rules:
-    - logger_context_matches_scope: true
-      logger_names: ["Logger", "logger"]
-    - no_domain_entities_in_presentation_ui: true
-      project_package_name: shared_domain
+plugins:
+  dart_architecture_lints:
+    git:
+      url: https://github.com/Gaan21/dart-architecture-lints
+      ref: <commit sha>
+    diagnostics:
+      no_late_keyword: false
+      method_order: warning
 ```
+
+- `plugins` is a top-level key of the analyzed package's options. The source is
+  `git:` (`url`, `ref`) or a local `path:`; the analysis server fetches and
+  builds it. The plugin is not a `pubspec.yaml` dependency.
+- `diagnostics` is a **map** keyed by rule ID. `false` disables a rule; `true`
+  keeps it; `info`, `warning` or `error` changes the severity it reports.
+- With analyzer 14.6, `ignore` is accepted by the options validator but does
+  **not** disable a rule, and `disable` disables it with an `unsupported_option`
+  warning. Use `false`.
+- Diagnostics are printed with the bare rule ID (for example
+  `- no_bang_operator`). Every rule reports **info** by default; `dart analyze`
+  exits non-zero for infos only with `--fatal-infos`, and for `warning`/`error`
+  overrides by default.
+- Plugins cannot be configured per rule. Rule options do not exist (see below).
+
+## Suppressing a diagnostic
+
+Ignore comments must name the plugin:
+
+```dart
+// ignore: dart_architecture_lints/no_bang_operator
+final int count = values!.length;
+// ignore_for_file: dart_architecture_lints/one_class_per_file
+```
+
+A bare `// ignore: no_bang_operator`, valid with custom_lint, no longer
+suppresses anything. `avoid_unawaited_ignore_without_reason` checks both forms.
+
+## Fixed rule options
+
+The analyzer plugin API gives rules no options, so every former option keeps
+the default that ran when no option was given. Each rule document lists them
+under "Options".
+
+| Rule | Fixed behavior (former options) |
+|------|---------------------------------|
+| [`require_explicit_types`](rules/require_explicit_types.md) | `strict` policy, no `local_names` (`policy`, `local_names`) |
+| [`enforce_utc_dates`](rules/enforce_utc_dates.md) | include `**`, no exclude, civil-date or clock globs |
+| [`no_local_datetime_constructors`](rules/no_local_datetime_constructors.md) | include `**`, no exclude, civil-date or clock globs |
+| [`logger_context_matches_scope`](rules/logger_context_matches_scope.md) | include `**/lib/**`; `*LoggerService` receivers; `error`, `warning`; `context` |
+| [`no_domain_entities_in_presentation_ui`](rules/no_domain_entities_in_presentation_ui.md) | analyzed package name; screens/widgets globs; `*_ui_mapper.dart` allowed |
+| [`no_device_local_in_presentation`](rules/no_device_local_in_presentation.md) | presentation/ui/screens/widgets globs; no allowed receivers or wrappers |
+| [`no_civil_utc_mix_without_helper`](rules/no_civil_utc_mix_without_helper.md) | mappers/formatters/adapters globs, tests excluded; no whitelist; strict mode off |
+| [`no_utc_time_format_without_empresa_helper`](rules/no_utc_time_format_without_empresa_helper.md) | presentation/screens/widgets/ui globs, tests excluded; `empresa` wrappers; no UTC debug context |
+| [`no_hardcoded_color_literal`](rules/no_hardcoded_color_literal.md) | include `**/presentation/**`; painters, theme and tests excluded |
+| [`no_hardcoded_border_radius`](rules/no_hardcoded_border_radius.md) | include `**/presentation/**`; theme, painters and tests excluded |
+
+A project that needs different scopes disables the rule, or suppresses lines.
+
+## Migrating from custom_lint (0.0.x)
+
+1. Remove `custom_lint` and `dart_architecture_lints` from `dev_dependencies`.
+2. Replace `analyzer: plugins: [custom_lint]` and the `custom_lint:` section with
+   the `plugins:` entry above. Each `- rule: false` becomes `rule: false` under
+   `diagnostics:`; `analyzer: errors:` severity overrides for these rules move to
+   `diagnostics:` values.
+3. Delete rule option keys (`policy`, `include_globs`, `allowed_wrappers`...);
+   they are not read. Rules that needed them may report more or less than before.
+4. Rewrite `// ignore: <rule>` and `// ignore_for_file: <rule>` comments for these
+   rules as `dart_architecture_lints/<rule>`. `// expect_lint:` is not supported.
+5. Replace `dart run custom_lint` in CI with `dart analyze` (add
+   `--fatal-infos` to keep failing on infos, as custom_lint 0.8.1 did).
+
+Rule IDs, messages and detection are unchanged: a differential run of the old
+and new implementations over the test, documentation and example fixtures
+reported identical diagnostics.
 
 ## WorkTracker-specific rules
 
@@ -98,10 +124,11 @@ dart run tool/generate_rule_tables.dart --check
 dart test
 ```
 
-The generator instantiates the actual plugin registrations, requires metadata
+The generator records the actual plugin registrations, requires metadata
 (`id`, `section`, `detects`, `disable_if`, `worktracker_specific` and, when true,
 `worktracker_reason`) for exactly those rules, requires every
-rule to be enabled by default, and validates each rule document's headings and
-default severity. `--check` reports drift without writing. Registration and
-configuration coverage of all rules does not imply behavior coverage of all
-rules; see the [coverage matrix](example_coverage.md).
+rule to be a warning rule (enabled by default), and validates each rule
+document's headings and default severity. `--check` reports drift without
+writing. `test/rule_cases.dart` holds a positive and a negative fixture for every
+rule; that is not exhaustive behavior coverage. See the
+[coverage matrix](example_coverage.md) for documentation examples.

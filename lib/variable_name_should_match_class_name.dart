@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
@@ -9,23 +9,25 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// enhancing readability when the class name provides important context.
 class VariableNameShouldMatchClassName extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [VariableNameShouldMatchClassName].
-  const VariableNameShouldMatchClassName() : super(code: _code);
+  VariableNameShouldMatchClassName() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    name: 'variable_name_should_contain_class_name',
-    problemMessage:
-        'Variable name "{0}" should include the class name "{1}" for clarity.',
-    correctionMessage:
-        'Use a camelCase name that includes the class name. Example: dashboardViewModel for DashboardViewModel.',
+    'variable_name_should_contain_class_name',
+    'Variable name "{0}" should include the class name "{1}" for clarity.',
+    correctionMessage: 'Use a camelCase name that includes the class name. Example: dashboardViewModel for DashboardViewModel.',
   );
 
   /// Executes the lint rule and applies the validation for variable naming conventions.
   @override
-  void runOnNonGenerated(CustomLintResolver resolver,
-      DiagnosticReporter reporter, CustomLintContext context) {
-    context.registry.addVariableDeclarationList(
-        (VariableDeclarationList variableDeclarationList) {
+  void runOnNonGenerated(
+    LintFile resolver,
+    DiagnosticReporter reporter,
+    LintRunContext context,
+  ) {
+    context.registry.addVariableDeclarationList((
+      VariableDeclarationList variableDeclarationList,
+    ) {
       for (VariableDeclaration variableDeclaration
           in variableDeclarationList.variables) {
         final DartType? dartType =
@@ -63,7 +65,7 @@ class VariableNameShouldMatchClassName extends GeneratedSkippingDartLintRule {
       'void',
       'Object',
       'dynamic',
-      'Widget'
+      'Widget',
     };
 
     final String typeName = type.getDisplayString().replaceAll('?', '');
@@ -104,16 +106,19 @@ class VariableNameShouldMatchClassName extends GeneratedSkippingDartLintRule {
   }
 
   bool _containsClassName(String variableName, String className) {
-    final String normalizedVariableName =
-        variableName.replaceAll('_', '').toLowerCase();
-    final String normalizedClassName =
-        className.replaceAll('_', '').toLowerCase();
+    final String normalizedVariableName = variableName
+        .replaceAll('_', '')
+        .toLowerCase();
+    final String normalizedClassName = className
+        .replaceAll('_', '')
+        .toLowerCase();
 
     return normalizedVariableName.contains(normalizedClassName);
   }
 
   bool _isDocumentedCallbackVariable(
-      VariableDeclarationList variableDeclarationList) {
+    VariableDeclarationList variableDeclarationList,
+  ) {
     if (!_isInCallbackOrLambda(variableDeclarationList)) return false;
     return _hasPrecedingComment(variableDeclarationList);
   }

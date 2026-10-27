@@ -1,16 +1,18 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that enforces UseCases to extend BaseUseCase.
-/// UseCases must extend BaseUseCase<T, P> for consistent error handling and Result<T> conversion.
+/// UseCases must extend `BaseUseCase<T, P>` for consistent error handling and `Result<T>` conversion.
 class UseCasesExtendBaseUseCase extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [UseCasesExtendBaseUseCase].
-  const UseCasesExtendBaseUseCase() : super(code: _code);
+  UseCasesExtendBaseUseCase() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'usecases_extend_base_usecase',
+    'Los UseCases deben extender BaseUseCase<T, P> para manejo consistente de errores y conversión a Result<T>.',
     correctionMessage:
         'Extiende BaseUseCase<TipoRetorno, TipoParams> y usa executeGuard(() => ...) para envolver operaciones que puedan fallar.\n'
         'Ejemplo:\n'
@@ -22,19 +24,16 @@ class UseCasesExtendBaseUseCase extends GeneratedSkippingDartLintRule {
         '      return executeGuard(() => _repo.getById(id));\n'
         '    }\n'
         '  }',
-    name: 'usecases_extend_base_usecase',
-    problemMessage:
-        'Los UseCases deben extender BaseUseCase<T, P> para manejo consistente de errores y conversión a Result<T>.',
   );
 
   /// Executes the lint rule to detect UseCases that do not extend BaseUseCase.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final uri = resolver.source.uri;
+    final uri = resolver.uri;
     final path = uri.path;
 
     // Solo aplicar en domain/useCases/ (incluyendo subcarpetas)
@@ -49,7 +48,7 @@ class UseCasesExtendBaseUseCase extends GeneratedSkippingDartLintRule {
       }
 
       // Solo verificar clases que terminan en "UseCase"
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       if (!className.endsWith('UseCase')) {
         return;
       }

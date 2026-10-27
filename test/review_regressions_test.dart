@@ -1,5 +1,6 @@
 import 'package:dart_architecture_lints/streamcontroller_must_close.dart';
 import 'package:test/test.dart';
+
 import '../tool/generate_rule_tables.dart' as generator;
 import 'rule_test_support.dart';
 
@@ -14,7 +15,7 @@ void main() {
     test(
       'field and constructor references remain borrowed: $wrapper',
       () async {
-        final result = await runRule(const StreamControllerMustClose(), '''
+        final result = await runRule(StreamControllerMustClose(), '''
 import 'dart:async';
 final StreamController<int>? external = StreamController<int>();
 class ChangeNotifier { void dispose() {} }
@@ -34,7 +35,7 @@ class ConstructorBorrower extends ChangeNotifier {
     'wrapping construction does not turn an owned resource into borrowed',
     () async {
       expect(
-        await runRule(const StreamControllerMustClose(), '''
+        await runRule(StreamControllerMustClose(), '''
 import 'dart:async';
 class ChangeNotifier { void dispose() {} }
 class Owner extends ChangeNotifier {

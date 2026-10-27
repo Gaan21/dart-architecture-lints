@@ -1,37 +1,27 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 import 'package:dart_architecture_lints/timezone_safety_utils.dart';
 
 class NoDeviceLocalInPresentationLint extends GeneratedSkippingDartLintRule {
-  const NoDeviceLocalInPresentationLint({
+  NoDeviceLocalInPresentationLint({
     this.config = const NoDeviceLocalInPresentationConfig(),
   }) : super(code: _code);
 
   final NoDeviceLocalInPresentationConfig config;
 
   static const _code = LintCode(
-    name: 'no_device_local_in_presentation',
-    problemMessage:
-        'Avoid DateTime.toLocal() in presentation layer. Use backend timezone-aware values or approved time helper.',
-    correctionMessage:
-        'Move timezone conversion to an approved time helper/service and keep presentation code timezone-safe.',
+    'no_device_local_in_presentation',
+    'Avoid DateTime.toLocal() in presentation layer. Use backend timezone-aware values or approved time helper.',
+    correctionMessage: 'Move timezone conversion to an approved time helper/service and keep presentation code timezone-safe.',
   );
-
-  static NoDeviceLocalInPresentationLint fromConfigs(
-      CustomLintConfigs configs) {
-    final options = readRuleOptions(configs, _code.name);
-    return NoDeviceLocalInPresentationLint(
-      config: NoDeviceLocalInPresentationConfig.fromJson(options),
-    );
-  }
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     final path = normalizeLintPath(resolver.path);
     if (!config.matchesPath(path)) return;
@@ -58,24 +48,6 @@ class NoDeviceLocalInPresentationConfig {
     this.allowedReceivers = const [],
     this.allowedWrappers = const [],
   });
-
-  factory NoDeviceLocalInPresentationConfig.fromJson(
-      Map<String, Object?> json) {
-    return NoDeviceLocalInPresentationConfig(
-      includeGlobs: readStringListOption(
-        json,
-        'include_globs',
-        fallback: _defaultIncludes,
-      ),
-      excludeGlobs: readStringListOption(json, 'exclude_globs'),
-      allowedReceivers: readStringListOption(json, 'allowed_receivers'),
-      allowedWrappers: readStringListOption(
-        json,
-        'allowed_wrappers',
-        fallback: readStringListOption(json, 'allowed_helpers'),
-      ),
-    );
-  }
 
   final List<String> includeGlobs;
   final List<String> excludeGlobs;
@@ -114,7 +86,8 @@ class NoDeviceLocalInPresentationConfig {
       if (current is MethodInvocation) {
         final names = _callCandidates(current);
         if (names.any(
-            (candidate) => matchesAnyWildcard(candidate, allowedWrappers))) {
+          (candidate) => matchesAnyWildcard(candidate, allowedWrappers),
+        )) {
           return true;
         }
       }
@@ -131,10 +104,6 @@ class NoDeviceLocalInPresentationConfig {
 
     final source = target.toSource();
     final compactSource = source.replaceAll(' ', '');
-    return [
-      methodName,
-      '$source.$methodName',
-      '$compactSource.$methodName',
-    ];
+    return [methodName, '$source.$methodName', '$compactSource.$methodName'];
   }
 }

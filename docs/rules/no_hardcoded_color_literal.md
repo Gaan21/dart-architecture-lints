@@ -32,7 +32,7 @@ The project does not use color tokens, or the reported folders legitimately defi
 
 ## Options
 
-Sibling keys `include_globs` (default `["**/presentation/**"]`) and `exclude_globs` (default `**/*_painter.dart`, `**/theme/**`, `**/test/**`, `**/tests/**`, `**/*_test.dart`). Providing a list replaces its default.
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): include glob `**/presentation/**`; exclude globs `**/*_painter.dart`, `**/theme/**`, `**/test/**`, `**/tests/**`, `**/*_test.dart`.
 
 ## Limits
 

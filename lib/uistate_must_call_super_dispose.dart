@@ -1,30 +1,28 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Ensures UiState classes invoke super.dispose(), avoiding leaked listeners.
 class UiStateMustCallSuperDisposeLint extends GeneratedSkippingDartLintRule {
   /// Creates a new instance of the lint.
-  const UiStateMustCallSuperDisposeLint() : super(code: _code);
+  UiStateMustCallSuperDisposeLint() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'uistate_must_call_super_dispose',
-    problemMessage:
-        'UiState dispose() is missing super.dispose(). This can leak listeners and timers managed by the base ChangeNotifier.',
-    correctionMessage:
-        'Call super.dispose() at the end of dispose() to ensure the ChangeNotifier cleans up listeners and resources.',
+    'uistate_must_call_super_dispose',
+    'UiState dispose() is missing super.dispose(). This can leak listeners and timers managed by the base ChangeNotifier.',
+    correctionMessage: 'Call super.dispose() at the end of dispose() to ensure the ChangeNotifier cleans up listeners and resources.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addMethodDeclaration((MethodDeclaration node) {
       if (node.name.lexeme != 'dispose') return;
-      if (node.isAbstract) return;
+      if (isAbstractMethod(node)) return;
 
       final uiStateClass = _enclosingUiState(node);
       if (uiStateClass == null) return;
@@ -45,7 +43,7 @@ class UiStateMustCallSuperDisposeLint extends GeneratedSkippingDartLintRule {
   }
 
   bool _looksLikeUiState(ClassDeclaration classDeclaration) {
-    if (_hasUiStateName(classDeclaration.name.lexeme)) return true;
+    if (_hasUiStateName(classDeclaration.namePart.typeName.lexeme)) return true;
 
     final extendsClause = classDeclaration.extendsClause;
     if (extendsClause != null) {

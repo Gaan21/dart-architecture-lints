@@ -1,35 +1,34 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that ensures ViewModels call super.dispose() in their dispose method.
 /// Proper disposal is critical for preventing memory leaks and ensuring cleanup.
 class ViewModelsCallSuperDisposeLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [ViewModelsCallSuperDisposeLint].
-  const ViewModelsCallSuperDisposeLint() : super(code: _code);
+  ViewModelsCallSuperDisposeLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'viewmodels_call_super_dispose',
+    'ViewModel dispose() methods must call super.dispose() for proper cleanup and preventing memory leaks.',
     correctionMessage: 'Add super.dispose() at the end of the dispose method',
-    name: 'viewmodels_call_super_dispose',
-    problemMessage:
-        'ViewModel dispose() methods must call super.dispose() for proper cleanup and preventing memory leaks.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addMethodDeclaration((MethodDeclaration node) {
       // Only check dispose methods
       if (node.name.lexeme != 'dispose') return;
 
       // Skip abstract methods
-      if (node.isAbstract) return;
+      if (isAbstractMethod(node)) return;
 
       // Check if this class extends a ViewModel base class
       if (!_isInViewModelClass(node)) return;
@@ -47,7 +46,7 @@ class ViewModelsCallSuperDisposeLint extends GeneratedSkippingDartLintRule {
     if (classDeclaration == null) return false;
 
     // Exclude UiState classes (handled by uistate_must_call_super_dispose rule)
-    final className = classDeclaration.name.lexeme;
+    final className = classDeclaration.namePart.typeName.lexeme;
     if (_isUiStateClass(className, classDeclaration)) return false;
 
     final extendsClause = classDeclaration.extendsClause;
@@ -164,8 +163,9 @@ class ViewModelsCallSuperDisposeLint extends GeneratedSkippingDartLintRule {
 
     if (statement is TryStatement) {
       return _containsSuperDisposeCall(statement.body) ||
-          statement.catchClauses
-              .any((clause) => _containsSuperDisposeCall(clause.body)) ||
+          statement.catchClauses.any(
+            (clause) => _containsSuperDisposeCall(clause.body),
+          ) ||
           (statement.finallyBlock != null &&
               _containsSuperDisposeCall(statement.finallyBlock!));
     }

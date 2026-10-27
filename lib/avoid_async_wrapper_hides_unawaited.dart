@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Lint rule that detects the anti-pattern of wrapping a single `await`
@@ -29,13 +29,13 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 ///   if truly fire-and-forget (and ensure NO-THROW contract).
 /// - Await properly inside an `async` method.
 /// - In Provider.create: use `addPostFrameCallback((_) { unawaited(doWork()); })`.
-class AvoidAsyncWrapperHidesUnawaitedLint extends GeneratedSkippingDartLintRule {
-  const AvoidAsyncWrapperHidesUnawaitedLint() : super(code: _code);
+class AvoidAsyncWrapperHidesUnawaitedLint
+    extends GeneratedSkippingDartLintRule {
+  AvoidAsyncWrapperHidesUnawaitedLint() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'avoid_async_wrapper_hides_unawaited',
-    problemMessage:
-        'Anti-patrón: wrapper async con un solo `await` para ocultar un '
+    'avoid_async_wrapper_hides_unawaited',
+    'Anti-patrón: wrapper async con un solo `await` para ocultar un '
         'Future no-esperado. Esto evade la gobernanza de `avoid_unawaited`.',
     correctionMessage:
         'Alternativas: (1) usa `unawaited(expr)` con '
@@ -47,9 +47,9 @@ class AvoidAsyncWrapperHidesUnawaitedLint extends GeneratedSkippingDartLintRule 
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     // Detect scheduleMicrotask(...) and Timer.run(...)
     context.registry.addMethodInvocation((MethodInvocation node) {
@@ -59,13 +59,13 @@ class AvoidAsyncWrapperHidesUnawaitedLint extends GeneratedSkippingDartLintRule 
     });
 
     // Detect Future(...)  with unnamed constructor
-    context.registry.addInstanceCreationExpression(
-      (InstanceCreationExpression node) {
-        if (_isUnnamedFutureConstructor(node)) {
-          _checkSingleAwaitCallback(node.argumentList, node, reporter);
-        }
-      },
-    );
+    context.registry.addInstanceCreationExpression((
+      InstanceCreationExpression node,
+    ) {
+      if (_isUnnamedFutureConstructor(node)) {
+        _checkSingleAwaitCallback(node.argumentList, node, reporter);
+      }
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -74,8 +74,7 @@ class AvoidAsyncWrapperHidesUnawaitedLint extends GeneratedSkippingDartLintRule 
 
   /// `scheduleMicrotask(...)` — top-level function, no target.
   bool _isScheduleMicrotask(MethodInvocation node) {
-    return node.target == null &&
-        node.methodName.name == 'scheduleMicrotask';
+    return node.target == null && node.methodName.name == 'scheduleMicrotask';
   }
 
   /// `Timer.run(...)` — static method called on `Timer` identifier.

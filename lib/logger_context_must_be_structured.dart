@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Lint rule that enforces structured context in logging calls.
@@ -11,12 +11,11 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 ///
 /// Rejects: empty, generic (`test`, `debug`, `tmp`), or non-deterministic values.
 class LoggerContextMustBeStructuredLint extends GeneratedSkippingDartLintRule {
-  const LoggerContextMustBeStructuredLint() : super(code: _code);
+  LoggerContextMustBeStructuredLint() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'logger_context_must_be_structured',
-    problemMessage:
-        'Llamada a AppLoggerService sin context estructurado válido. '
+    'logger_context_must_be_structured',
+    'Llamada a AppLoggerService sin context estructurado válido. '
         'Un context inconsistente rompe la trazabilidad y agrupación de logs, '
         'dificultando el diagnóstico en producción.',
     correctionMessage:
@@ -30,11 +29,7 @@ class LoggerContextMustBeStructuredLint extends GeneratedSkippingDartLintRule {
   /// Only error/warning/critical need mandatory context for production
   /// observability. debug/info are development-local and don't justify
   /// the ceremony.
-  static const _logMethods = {
-    'warning',
-    'error',
-    'critical',
-  };
+  static const _logMethods = {'warning', 'error', 'critical'};
 
   /// Generic/prohibited context values.
   static const _prohibitedContexts = {
@@ -50,14 +45,15 @@ class LoggerContextMustBeStructuredLint extends GeneratedSkippingDartLintRule {
 
   /// Pattern for valid structured context: Word.Word or word.word.word
   /// Examples: UserRepository.fetchById, sync.pull.mergeConflict
-  static final _validContextPattern =
-      RegExp(r'^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$');
+  static final _validContextPattern = RegExp(
+    r'^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$',
+  );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     final filePath = resolver.path;
     final normalized = filePath.replaceAll('\\', '/');
@@ -88,9 +84,8 @@ class LoggerContextMustBeStructuredLint extends GeneratedSkippingDartLintRule {
       reporter.atNode(
         node,
         LintCode(
-          name: 'logger_context_must_be_structured',
-          problemMessage:
-              'Llamada a AppLoggerService.$methodName() sin parámetro context. '
+          'logger_context_must_be_structured',
+          'Llamada a AppLoggerService.$methodName() sin parámetro context. '
               'Sin context, el log pierde trazabilidad: no se puede agrupar ni '
               'filtrar por origen en dashboards de observabilidad.',
           correctionMessage:
@@ -125,9 +120,8 @@ class LoggerContextMustBeStructuredLint extends GeneratedSkippingDartLintRule {
       reporter.atNode(
         contextExpr,
         LintCode(
-          name: 'logger_context_must_be_structured',
-          problemMessage:
-              'Context vacío en AppLoggerService.$methodName(). '
+          'logger_context_must_be_structured',
+          'Context vacío en AppLoggerService.$methodName(). '
               'Un context vacío imposibilita el filtrado y agrupación de logs.',
           correctionMessage:
               'Usa un context descriptivo: "Class.method" o "module.action". '
@@ -142,9 +136,8 @@ class LoggerContextMustBeStructuredLint extends GeneratedSkippingDartLintRule {
       reporter.atNode(
         contextExpr,
         LintCode(
-          name: 'logger_context_must_be_structured',
-          problemMessage:
-              'Context genérico "$trimmed" en AppLoggerService.$methodName(). '
+          'logger_context_must_be_structured',
+          'Context genérico "$trimmed" en AppLoggerService.$methodName(). '
               'Los valores genéricos (test, debug, tmp) no aportan trazabilidad '
               'y contaminan los filtros de observabilidad.',
           correctionMessage:
@@ -161,9 +154,8 @@ class LoggerContextMustBeStructuredLint extends GeneratedSkippingDartLintRule {
       reporter.atNode(
         contextExpr,
         LintCode(
-          name: 'logger_context_must_be_structured',
-          problemMessage:
-              'Context "$trimmed" no sigue el formato estructurado requerido '
+          'logger_context_must_be_structured',
+          'Context "$trimmed" no sigue el formato estructurado requerido '
               'en AppLoggerService.$methodName(). '
               'El formato esperado es "Class.method" o "module.submodule.action" '
               'para garantizar consistencia en la agrupación de logs.',
@@ -212,8 +204,8 @@ class LoggerContextMustBeStructuredLint extends GeneratedSkippingDartLintRule {
   /// Finds the `context` named argument in the argument list.
   Expression? _findContextArgument(ArgumentList args) {
     for (final arg in args.arguments) {
-      if (arg is NamedExpression && arg.name.label.name == 'context') {
-        return arg.expression;
+      if (arg is NamedArgument && arg.name.lexeme == 'context') {
+        return arg.argumentExpression;
       }
     }
     return null;

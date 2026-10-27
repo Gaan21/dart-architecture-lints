@@ -1,20 +1,19 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that prohibits the use of the 'late' keyword except for
 /// justified dependency injection cases.
 class NoLateKeywordLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoLateKeywordLint].
-  const NoLateKeywordLint() : super(code: _code);
+  NoLateKeywordLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    name: 'no_late_keyword',
-    problemMessage:
-        'El keyword "late" debe evitarse excepto para dependency injection. Puede causar errores en runtime y hace la inicialización impredecible.',
+    'no_late_keyword',
+    'El keyword "late" debe evitarse excepto para dependency injection. Puede causar errores en runtime y hace la inicialización impredecible.',
     correctionMessage:
         'Usa nullable (Type?) o inicializa en constructor. "late" solo se permite para DI (GetIt, ServiceLocator, etc.).\n'
         'Ejemplo:\n'
@@ -27,9 +26,9 @@ class NoLateKeywordLint extends GeneratedSkippingDartLintRule {
   /// Executes the lint rule to detect inappropriate uses of the 'late' keyword.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     // Exclude test files
     final filePath = resolver.path;
@@ -40,10 +39,7 @@ class NoLateKeywordLint extends GeneratedSkippingDartLintRule {
       if (node.lateKeyword != null) {
         // Check if this is a justified DI case
         if (!_isJustifiedDICase(node)) {
-          reporter.atToken(
-            node.lateKeyword!,
-            _code,
-          );
+          reporter.atToken(node.lateKeyword!, _code);
         }
       }
     });
@@ -79,7 +75,7 @@ class NoLateKeywordLint extends GeneratedSkippingDartLintRule {
         'container',
         'injector',
         'provider',
-        'resolver'
+        'resolver',
       };
 
       // Check if type name contains DI-related keywords
@@ -93,7 +89,7 @@ class NoLateKeywordLint extends GeneratedSkippingDartLintRule {
     // Check if we're in a class that seems to be a DI container
     final classDeclaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (classDeclaration != null) {
-      final className = classDeclaration.name.lexeme.toLowerCase();
+      final className = classDeclaration.namePart.typeName.lexeme.toLowerCase();
 
       const diClassPatterns = {
         'container',
@@ -101,7 +97,7 @@ class NoLateKeywordLint extends GeneratedSkippingDartLintRule {
         'injector',
         'servicecontainer',
         'dependencycontainer',
-        'di'
+        'di',
       };
 
       for (final pattern in diClassPatterns) {

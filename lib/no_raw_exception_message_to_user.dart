@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that prevents raw exception messages from reaching the user.
@@ -14,7 +14,7 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// Scope: presentation layer only.
 class NoRawExceptionMessageToUser extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoRawExceptionMessageToUser].
-  const NoRawExceptionMessageToUser() : super(code: _code);
+  NoRawExceptionMessageToUser() : super(code: _code);
 
   /// UI widget/function names whose arguments must not contain raw exception messages.
   static const _uiCallees = {
@@ -39,9 +39,8 @@ class NoRawExceptionMessageToUser extends GeneratedSkippingDartLintRule {
   };
 
   static const _code = LintCode(
-    name: 'no_raw_exception_message_to_user',
-    problemMessage:
-        'No uses mensajes crudos de excepción directamente en componentes UI. '
+    'no_raw_exception_message_to_user',
+    'No uses mensajes crudos de excepción directamente en componentes UI. '
         'Los mensajes de error al usuario deben venir de códigos i18n estables.',
     correctionMessage:
         'Usa un código de error estable y localización para el mensaje:\n'
@@ -56,20 +55,20 @@ class NoRawExceptionMessageToUser extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     // Only enforce in the presentation layer
-    if (!resolver.source.uri.path.contains('/presentation/')) return;
+    if (!resolver.uri.path.contains('/presentation/')) return;
 
-    context.registry.addInstanceCreationExpression(
-      (InstanceCreationExpression node) {
-        final typeName = node.constructorName.type.name.lexeme;
-        if (!_uiCallees.contains(typeName)) return;
-        _checkArguments(node.argumentList, reporter);
-      },
-    );
+    context.registry.addInstanceCreationExpression((
+      InstanceCreationExpression node,
+    ) {
+      final typeName = node.constructorName.type.name.lexeme;
+      if (!_uiCallees.contains(typeName)) return;
+      _checkArguments(node.argumentList, reporter);
+    });
 
     context.registry.addMethodInvocation((MethodInvocation node) {
       final methodName = node.methodName.name;
@@ -78,10 +77,7 @@ class NoRawExceptionMessageToUser extends GeneratedSkippingDartLintRule {
     });
   }
 
-  void _checkArguments(
-    ArgumentList argumentList,
-    DiagnosticReporter reporter,
-  ) {
+  void _checkArguments(ArgumentList argumentList, DiagnosticReporter reporter) {
     final visitor = _RawMessageVisitor(reporter, _code);
     argumentList.visitChildren(visitor);
   }

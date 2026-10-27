@@ -2,7 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Reports `throw` and `rethrow` in methods of classes whose name contains
@@ -13,31 +13,29 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// lexical check does not prove that called code cannot throw.
 class NoResultThrowLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoResultThrowLint].
-  const NoResultThrowLint() : super(code: _code);
+  NoResultThrowLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    name: 'no_result_throw',
-    problemMessage:
-        'Do not throw exceptions in UseCase or Repository. Return Failure(AppException(...)) instead to maintain Result<T> contract.',
-    correctionMessage:
-        'Replace throw with: return Failure(AppException.validation(code: "...", message: "..."));',
+    'no_result_throw',
+    'Do not throw exceptions in UseCase or Repository. Return Failure(AppException(...)) instead to maintain Result<T> contract.',
+    correctionMessage: 'Replace throw with: return Failure(AppException.validation(code: "...", message: "..."));',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addClassDeclaration((ClassDeclaration node) {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
 
       // Only check UseCase and Repository classes
       if (!_isUseCaseOrRepository(className)) return;
 
       // Find all throw statements in the class
-      for (final member in node.members) {
+      for (final member in node.body.members) {
         if (member is MethodDeclaration) {
           _checkMethodForThrows(member, reporter);
         }

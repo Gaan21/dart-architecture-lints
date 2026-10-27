@@ -1,7 +1,8 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+
 import 'resource_types.dart';
 
 /// A lint rule that prevents mixins from owning resources with lifecycle
@@ -12,13 +13,12 @@ import 'resource_types.dart';
 /// that can be disposed correctly.
 class MixinNoStateOwnershipLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [MixinNoStateOwnershipLint].
-  const MixinNoStateOwnershipLint() : super(code: _code);
+  MixinNoStateOwnershipLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    name: 'mixin_no_state_ownership',
-    problemMessage:
-        'Mixin no debe poseer resources con lifecycle (TextEditingController, Timer, FocusNode, etc.). Los mixins deben ser stateless y solo proveer comportamiento.',
+    'mixin_no_state_ownership',
+    'Mixin no debe poseer resources con lifecycle (TextEditingController, Timer, FocusNode, etc.). Los mixins deben ser stateless y solo proveer comportamiento.',
     correctionMessage:
         'Mueve ownership a ChangeNotifier (UiState) y accede vía BuildContext.\n'
         'Ejemplo en mixin:\n'
@@ -30,13 +30,13 @@ class MixinNoStateOwnershipLint extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addMixinDeclaration((MixinDeclaration node) {
       // Check all fields in the mixin
-      for (final member in node.members) {
+      for (final member in node.body.members) {
         if (member is FieldDeclaration) {
           if (member.fields.variables.any(
             (variable) => isResourceType(

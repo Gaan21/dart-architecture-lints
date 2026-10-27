@@ -2,7 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Detects two overlay lifecycle hazards that are NOT covered by
@@ -27,7 +27,7 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// the file are never flagged.
 class OverlayLifecycleContextSafetyLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [OverlayLifecycleContextSafetyLint].
-  const OverlayLifecycleContextSafetyLint() : super(code: _code);
+  OverlayLifecycleContextSafetyLint() : super(code: _code);
 
   /// Top-level overlay functions whose `builder:` closure is scanned.
   static const _overlayFunctions = <String>{
@@ -91,18 +91,16 @@ class OverlayLifecycleContextSafetyLint extends GeneratedSkippingDartLintRule {
   static const _contextExtensionLookups = <String>{'read', 'watch', 'select'};
 
   static const _code = LintCode(
-    name: 'overlay_lifecycle_context_safety',
-    problemMessage:
-        'Overlay lifecycle/context hazard: dialog/sheet builders must not capture a caller-owned controller or use a caller BuildContext for inherited lookups (use a dedicated StatefulWidget and the builder\'s own context).',
-    correctionMessage:
-        'Move the controller into a StatefulWidget rendered by the overlay and dispose it in State.dispose(); resolve inherited values before opening the overlay or use the builder context parameter.',
+    'overlay_lifecycle_context_safety',
+    'Overlay lifecycle/context hazard: dialog/sheet builders must not capture a caller-owned controller or use a caller BuildContext for inherited lookups (use a dedicated StatefulWidget and the builder\'s own context).',
+    correctionMessage: 'Move the controller into a StatefulWidget rendered by the overlay and dispose it in State.dispose(); resolve inherited values before opening the overlay or use the builder context parameter.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addMethodInvocation((MethodInvocation node) {
       if (!_overlayFunctions.contains(node.methodName.name)) return;
@@ -140,8 +138,8 @@ class OverlayLifecycleContextSafetyLint extends GeneratedSkippingDartLintRule {
 
   FunctionExpression? _builderClosure(ArgumentList argumentList) {
     for (final argument in argumentList.arguments) {
-      if (argument is NamedExpression && argument.name.label.name == 'builder') {
-        final expression = argument.expression;
+      if (argument is NamedArgument && argument.name.lexeme == 'builder') {
+        final expression = argument.argumentExpression;
         if (expression is FunctionExpression) return expression;
       }
     }
@@ -191,9 +189,9 @@ class _DeclaredElementCollector extends RecursiveAstVisitor<void> {
   }
 
   @override
-  void visitSimpleFormalParameter(SimpleFormalParameter node) {
+  void visitRegularFormalParameter(RegularFormalParameter node) {
     _add(node.declaredFragment?.element);
-    super.visitSimpleFormalParameter(node);
+    super.visitRegularFormalParameter(node);
   }
 
   @override
@@ -206,12 +204,6 @@ class _DeclaredElementCollector extends RecursiveAstVisitor<void> {
   void visitSuperFormalParameter(SuperFormalParameter node) {
     _add(node.declaredFragment?.element);
     super.visitSuperFormalParameter(node);
-  }
-
-  @override
-  void visitFunctionTypedFormalParameter(FunctionTypedFormalParameter node) {
-    _add(node.declaredFragment?.element);
-    super.visitFunctionTypedFormalParameter(node);
   }
 
   @override

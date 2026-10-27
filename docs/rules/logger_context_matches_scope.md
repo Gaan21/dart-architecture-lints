@@ -8,7 +8,7 @@
 
 ## What it detects
 
-Logger calls (`error`/`warning` by default) on configured logger receivers whose `context:` argument is a simple string literal different from `TypeName.member`, where the member name has one leading `_` and a trailing `Internal` removed. The enclosing type may be a class, mixin, enum or named extension.
+Logger calls (`error`/`warning` by default) on logger receivers whose `context:` argument is a simple string literal different from `TypeName.member`, where the member name has one leading `_` and a trailing `Internal` removed. The enclosing type may be a class, mixin, enum or named extension.
 
 ## Why
 
@@ -40,10 +40,10 @@ Your logging API has no context argument or uses another context format.
 
 ## Options
 
-Sibling keys: `include_globs` (default `["**/lib/**"]`), `exclude_globs`, `logger_names` (wildcards matching receiver names or resolved type names; without it, receivers named `AppLoggerService`, `appLoggerService` or ending with `LoggerService` match), `methods` (default `[error, warning]`) and `context_argument` (default `context`). Example: `logger_names: ["Logger", "logger"]`. A provided list replaces its default; an empty list matches nothing.
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): include globs `**/lib/**`, no exclude globs; receivers named `AppLoggerService`, `appLoggerService` or ending with `LoggerService`; methods `error` and `warning`; argument `context`.
 
 ## Limits
 
-- With default receiver names, loggers not named `*LoggerService` are ignored; set `logger_names` for other logging APIs.
+- Loggers not named `AppLoggerService`, `appLoggerService` or `*LoggerService` are ignored.
 - Only literal contexts inside named methods and named constructors are checked; unnamed constructors and top-level functions are skipped.
 - It checks scope consistency, not whether logging is appropriate.

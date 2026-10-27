@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:analyzer/file_system/physical_file_system.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
-import 'package:dart_architecture_lints/dart_architecture_lints.dart';
-import 'package:package_config/package_config.dart';
+
 import 'package:test/test.dart';
+
 import '../tool/generate_rule_tables.dart' as generator;
+import 'rule_test_support.dart';
 
 void main() {
   final rules = generator.registeredRules();
@@ -21,28 +20,13 @@ void main() {
       final readme = File('README.md').readAsStringSync();
       final block = generator.worktrackerDisableYaml(metadata);
       expect(readme, contains(block));
-      final yaml = RegExp(
-        r'```yaml\n([\s\S]*?)```',
-      ).firstMatch(block)!.group(1)!;
-      final directory = await Directory.systemTemp.createTemp(
-        'worktracker_off_',
-      );
-      try {
-        final file = File('${directory.path}/analysis_options.yaml');
-        await file.writeAsString(yaml);
-        final configs = CustomLintConfigs.parse(
-          PhysicalResourceProvider.INSTANCE.getFile(file.path),
-          PackageConfig([]),
-        );
-        final disabled = {
-          for (final rule in createPlugin().getLintRules(configs))
-            if (!rule.isEnabled(configs)) rule.code.name,
-        };
-        expect(specific, isNotEmpty);
-        expect(disabled, specific);
-      } finally {
-        await directory.delete(recursive: true);
-      }
+      final yaml = RegExp(r'```yaml\n([\s\S]*?)```')
+          .firstMatch(block)!
+          .group(1)!;
+      final selection = await pluginSelection(_withPluginSource(yaml));
+      final disabled = rules.keys.toSet().difference(selection.enabled);
+      expect(specific, isNotEmpty);
+      expect(disabled, specific);
     },
   );
 
@@ -52,9 +36,8 @@ void main() {
     );
     final reason = marked['worktracker_reason']!;
     final markedRule = rules['avoid_scattered_401_handling']!;
-    final markedDoc = File(
-      'docs/rules/avoid_scattered_401_handling.md',
-    ).readAsStringSync();
+    final markedDoc = File('docs/rules/avoid_scattered_401_handling.md')
+        .readAsStringSync();
     generator.validateRuleDoc(
       'avoid_scattered_401_handling',
       markedDoc,
@@ -123,3 +106,10 @@ void main() {
     }
   });
 }
+
+/// Adds a local plugin source under the consumer's `dart_architecture_lints:`
+/// key, so the analyzer's parser accepts a block that only sets diagnostics.
+String _withPluginSource(String yaml) => yaml.replaceFirst(
+  '  dart_architecture_lints:\n',
+  '  dart_architecture_lints:\n    path: ${Directory.current.path}\n',
+);

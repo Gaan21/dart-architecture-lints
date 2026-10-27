@@ -1,29 +1,29 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Ensures MultiProvider declares UiState providers before ViewModel providers.
 class MultiProviderOrderLint extends GeneratedSkippingDartLintRule {
   /// Creates a new instance of the lint rule.
-  const MultiProviderOrderLint() : super(code: _code);
+  MultiProviderOrderLint() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'multiprovider_order',
-    problemMessage:
-        'Declare UiState providers before ViewModel providers so dependencies are available when the ViewModel initializes.',
-    correctionMessage:
-        'Move UiState providers (classes ending in UiState) before ViewModel providers (classes ending in ViewModel) inside the MultiProvider list.',
+    'multiprovider_order',
+    'Declare UiState providers before ViewModel providers so dependencies are available when the ViewModel initializes.',
+    correctionMessage: 'Move UiState providers (classes ending in UiState) before ViewModel providers (classes ending in ViewModel) inside the MultiProvider list.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    context.registry.addInstanceCreationExpression((InstanceCreationExpression node) {
+    context.registry.addInstanceCreationExpression((
+      InstanceCreationExpression node,
+    ) {
       if (!_isMultiProvider(node)) return;
 
       final providersList = _providersList(node.argumentList);
@@ -47,8 +47,8 @@ class MultiProviderOrderLint extends GeneratedSkippingDartLintRule {
 
   ListLiteral? _providersList(ArgumentList argumentList) {
     for (final argument in argumentList.arguments) {
-      if (argument is NamedExpression && argument.name.label.name == 'providers') {
-        final expression = argument.expression;
+      if (argument is NamedArgument && argument.name.lexeme == 'providers') {
+        final expression = argument.argumentExpression;
         if (expression is ListLiteral &&
             !expression.elements.any((element) => element is SpreadElement)) {
           return expression;
@@ -87,8 +87,8 @@ class MultiProviderOrderLint extends GeneratedSkippingDartLintRule {
     }
 
     for (final argument in providerExpression.argumentList.arguments) {
-      if (argument is NamedExpression && argument.name.label.name == 'create') {
-        final role = _roleFromCreateExpression(argument.expression);
+      if (argument is NamedArgument && argument.name.lexeme == 'create') {
+        final role = _roleFromCreateExpression(argument.argumentExpression);
         if (role != _ProviderRole.other) {
           return role;
         }

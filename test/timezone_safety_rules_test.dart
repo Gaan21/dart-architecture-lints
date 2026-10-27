@@ -1,18 +1,18 @@
 // ignore_for_file: deprecated_member_use
 
-import 'dart:io';
-
-import 'package:analyzer/error/error.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/diagnostic/diagnostic.dart';
 import 'package:dart_architecture_lints/no_civil_utc_mix_without_helper.dart';
 import 'package:dart_architecture_lints/no_device_local_in_presentation.dart';
 import 'package:test/test.dart';
+import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+
+import 'rule_test_support.dart';
 
 void main() {
   group('no_device_local_in_presentation', () {
     test('reports toLocal() in presentation file', () async {
       final errors = await _runRule(
-        rule: const NoDeviceLocalInPresentationLint(),
+        rule: NoDeviceLocalInPresentationLint(),
         relativeFilePath: 'lib/presentation/home_screen.dart',
         source: '''
 DateTime formatDate(DateTime serverValue) {
@@ -26,7 +26,7 @@ DateTime formatDate(DateTime serverValue) {
 
     test('does not report outside included globs', () async {
       final errors = await _runRule(
-        rule: const NoDeviceLocalInPresentationLint(),
+        rule: NoDeviceLocalInPresentationLint(),
         relativeFilePath: 'lib/domain/entities/event.dart',
         source: '''
 DateTime normalize(DateTime value) {
@@ -35,13 +35,15 @@ DateTime normalize(DateTime value) {
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_device_local_in_presentation')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_device_local_in_presentation')),
+      );
     });
 
     test('respects allowed receiver and wrappers', () async {
       final errors = await _runRule(
-        rule: const NoDeviceLocalInPresentationLint(
+        rule: NoDeviceLocalInPresentationLint(
           config: NoDeviceLocalInPresentationConfig(
             allowedReceivers: ['approvedTime'],
             allowedWrappers: ['TimeContract.*', 'formatWithApprovedTime'],
@@ -63,14 +65,16 @@ DateTime allowByTopLevelWrapper(DateTime utcTimestamp) {
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_device_local_in_presentation')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_device_local_in_presentation')),
+      );
     });
 
-    test('supports allowed_helpers alias', () async {
-      final config = NoDeviceLocalInPresentationConfig.fromJson({
-        'allowed_helpers': ['TimeContract.*'],
-      });
+    test('honours non-default allowed wrappers', () async {
+      const config = NoDeviceLocalInPresentationConfig(
+        allowedWrappers: ['TimeContract.*'],
+      );
 
       final errors = await _runRule(
         rule: NoDeviceLocalInPresentationLint(config: config),
@@ -82,13 +86,15 @@ String render(DateTime utcTimestamp) {
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_device_local_in_presentation')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_device_local_in_presentation')),
+      );
     });
 
     test('respects include and exclude globs', () async {
       final errors = await _runRule(
-        rule: const NoDeviceLocalInPresentationLint(
+        rule: NoDeviceLocalInPresentationLint(
           config: NoDeviceLocalInPresentationConfig(
             includeGlobs: ['**/ui/**'],
             excludeGlobs: ['**/ui/legacy/**'],
@@ -102,15 +108,17 @@ DateTime render(DateTime utcTimestamp) {
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_device_local_in_presentation')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_device_local_in_presentation')),
+      );
     });
   });
 
   group('no_civil_utc_mix_without_helper', () {
     test('reports real civil+instant binary comparison', () async {
       final errors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(),
+        rule: NoCivilUtcMixWithoutHelperLint(),
         relativeFilePath: 'lib/mappers/task_mapper.dart',
         source: '''
 bool hasMismatch(String civilDate, DateTime createdAtUtcDateTime) {
@@ -124,7 +132,7 @@ bool hasMismatch(String civilDate, DateTime createdAtUtcDateTime) {
 
     test('reports civil and instant interpolation mix', () async {
       final errors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(),
+        rule: NoCivilUtcMixWithoutHelperLint(),
         relativeFilePath: 'lib/mappers/task_mapper.dart',
         source: '''
 String mapLabel(String civilDate, DateTime createdAtUtcDateTime) {
@@ -138,7 +146,7 @@ String mapLabel(String civilDate, DateTime createdAtUtcDateTime) {
 
     test('does not report when approved helper is used', () async {
       final errors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(
+        rule: NoCivilUtcMixWithoutHelperLint(
           config: NoCivilUtcMixWithoutHelperConfig(
             helperWhitelist: ['TimeContract.normalizeCivilDate'],
           ),
@@ -151,13 +159,15 @@ String normalize(String civilDate, DateTime createdAtUtcDateTime) {
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_civil_utc_mix_without_helper')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_civil_utc_mix_without_helper')),
+      );
     });
 
     test('does not report passthrough wrapper delegation', () async {
       final errors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(),
+        rule: NoCivilUtcMixWithoutHelperLint(),
         relativeFilePath: 'lib/adapters/task_adapter.dart',
         source: '''
 Future<void> saveTask(
@@ -169,13 +179,15 @@ Future<void> saveTask(
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_civil_utc_mix_without_helper')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_civil_utc_mix_without_helper')),
+      );
     });
 
     test('does not report tests by default exclude globs', () async {
       final errors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(),
+        rule: NoCivilUtcMixWithoutHelperLint(),
         relativeFilePath: 'test/task_mapper_test.dart',
         source: '''
 String mapLabel(String civilDate, DateTime createdAtUtcDateTime) {
@@ -184,13 +196,15 @@ String mapLabel(String civilDate, DateTime createdAtUtcDateTime) {
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_civil_utc_mix_without_helper')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_civil_utc_mix_without_helper')),
+      );
     });
 
     test('does not report formatter with single timestamp', () async {
       final errors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(),
+        rule: NoCivilUtcMixWithoutHelperLint(),
         relativeFilePath: 'lib/formatters/task_formatter.dart',
         source: '''
 String formatTimestamp(DateTime createdAtUtcDateTime) {
@@ -199,13 +213,15 @@ String formatTimestamp(DateTime createdAtUtcDateTime) {
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_civil_utc_mix_without_helper')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_civil_utc_mix_without_helper')),
+      );
     });
 
     test('strict mode off keeps non-risky mixed invocation silent', () async {
       final errors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(),
+        rule: NoCivilUtcMixWithoutHelperLint(),
         relativeFilePath: 'lib/adapters/adapter.dart',
         source: '''
 String merge(String civilDate, DateTime timestampUtcDateTime) {
@@ -214,13 +230,15 @@ String merge(String civilDate, DateTime timestampUtcDateTime) {
 ''',
       );
 
-      expect(_errorCodes(errors),
-          isNot(contains('no_civil_utc_mix_without_helper')));
+      expect(
+        _errorCodes(errors),
+        isNot(contains('no_civil_utc_mix_without_helper')),
+      );
     });
 
     test('strict mode reports non-risky mixed invocation', () async {
       final errors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(
+        rule: NoCivilUtcMixWithoutHelperLint(
           config: NoCivilUtcMixWithoutHelperConfig(strictMode: true),
         ),
         relativeFilePath: 'lib/adapters/adapter.dart',
@@ -234,11 +252,11 @@ String merge(String civilDate, DateTime timestampUtcDateTime) {
       expect(_errorCodes(errors), contains('no_civil_utc_mix_without_helper'));
     });
 
-    test('supports include and exclude globs customization', () async {
-      final config = NoCivilUtcMixWithoutHelperConfig.fromJson({
-        'include_globs': ['**/repositories/**'],
-        'exclude_globs': ['**/repositories/legacy/**'],
-      });
+    test('honours non-default include and exclude globs', () async {
+      const config = NoCivilUtcMixWithoutHelperConfig(
+        includeGlobs: ['**/repositories/**'],
+        excludeGlobs: ['**/repositories/legacy/**'],
+      );
 
       final positive = await _runRule(
         rule: NoCivilUtcMixWithoutHelperLint(config: config),
@@ -261,21 +279,25 @@ bool compare(String civilDate, DateTime timestampUtcDateTime) {
       );
 
       expect(
-          _errorCodes(positive), contains('no_civil_utc_mix_without_helper'));
-      expect(_errorCodes(excluded),
-          isNot(contains('no_civil_utc_mix_without_helper')));
+        _errorCodes(positive),
+        contains('no_civil_utc_mix_without_helper'),
+      );
+      expect(
+        _errorCodes(excluded),
+        isNot(contains('no_civil_utc_mix_without_helper')),
+      );
     });
 
     test('smoke fixture representative flow', () async {
       final noLocalErrors = await _runRule(
-        rule: const NoDeviceLocalInPresentationLint(),
+        rule: NoDeviceLocalInPresentationLint(),
         relativeFilePath: 'lib/presentation/dashboard.dart',
         source: '''
 DateTime render(DateTime utcTimestamp) => utcTimestamp.toLocal();
 ''',
       );
       final mixErrors = await _runRule(
-        rule: const NoCivilUtcMixWithoutHelperLint(),
+        rule: NoCivilUtcMixWithoutHelperLint(),
         relativeFilePath: 'lib/mappers/dashboard_mapper.dart',
         source: '''
 String makeLabel(String civilDate, DateTime timestampUtcDateTime) {
@@ -284,39 +306,31 @@ String makeLabel(String civilDate, DateTime timestampUtcDateTime) {
 ''',
       );
 
-      expect(_errorCodes(noLocalErrors),
-          contains('no_device_local_in_presentation'));
       expect(
-          _errorCodes(mixErrors), contains('no_civil_utc_mix_without_helper'));
+        _errorCodes(noLocalErrors),
+        contains('no_device_local_in_presentation'),
+      );
+      expect(
+        _errorCodes(mixErrors),
+        contains('no_civil_utc_mix_without_helper'),
+      );
     });
   });
 }
 
-Future<List<AnalysisError>> _runRule({
-  required DartLintRule rule,
+Future<List<Diagnostic>> _runRule({
+  required GeneratedSkippingDartLintRule rule,
   required String relativeFilePath,
   required String source,
-}) async {
-  final tempDir =
-      await Directory.systemTemp.createTemp('timezone_safety_test_');
-  try {
-    final pubspec = File('${tempDir.path}/pubspec.yaml');
-    await pubspec.writeAsString('''
-name: lint_test_project
-environment:
-  sdk: ">=3.5.0 <4.0.0"
-''');
+}) => runRule(
+  rule,
+  source,
+  path: relativeFilePath,
+  packageName: 'lint_test_project',
+  sdk: '>=3.5.0 <4.0.0',
+  mustResolve: false,
+);
 
-    final file = File('${tempDir.path}/$relativeFilePath');
-    await file.parent.create(recursive: true);
-    await file.writeAsString(source);
-
-    return await rule.testAnalyzeAndRun(file);
-  } finally {
-    await tempDir.delete(recursive: true);
-  }
-}
-
-Set<String> _errorCodes(List<AnalysisError> errors) {
-  return errors.map((error) => error.errorCode.name).toSet();
+Set<String> _errorCodes(List<Diagnostic> errors) {
+  return errors.map((error) => error.diagnosticCode.lowerCaseName).toSet();
 }

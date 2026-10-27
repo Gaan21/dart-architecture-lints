@@ -10,7 +10,7 @@
 
 ## What it detects
 
-In files matching the include globs (default mappers/formatters/adapters folders): binary expressions with `+`, `==`, `!=`, `<`, `<=`, `>`, `>=`, string interpolations with two or more parts, and calls to `compareTo`, `difference`, `isBefore`, `isAfter`, `isAtSameMomentAs`, `format`, `merge` or `combine`, where one side shows civil-date evidence and the other instant evidence. Evidence comes from names (`date`, `day`, `fecha`, `civil`... versus `timestamp`, `utc`, `time`, `epoch`, `hour`...), instant members (`toUtc`, `millisecondsSinceEpoch`, `hour`...), `DateTime` constructors and parsed literals. Calls inside an invocation matching `helper_whitelist` are skipped.
+In files matching the include globs (default mappers/formatters/adapters folders): binary expressions with `+`, `==`, `!=`, `<`, `<=`, `>`, `>=`, string interpolations with two or more parts, and calls to `compareTo`, `difference`, `isBefore`, `isAfter`, `isAtSameMomentAs`, `format`, `merge` or `combine`, where one side shows civil-date evidence and the other instant evidence. Evidence comes from names (`date`, `day`, `fecha`, `civil`... versus `timestamp`, `utc`, `time`, `epoch`, `hour`...), instant members (`toUtc`, `millisecondsSinceEpoch`, `hour`...), `DateTime` constructors and parsed literals.
 
 ## Why
 
@@ -34,7 +34,7 @@ In any project outside WorkTracker that does not adopt the same convention. Your
 
 ## Options
 
-Sibling keys: `include_globs` (default `**/mappers/**`, `**/formatters/**`, `**/adapters/**`), `exclude_globs` (default `**/test/**`, `**/tests/**`, `**/*_test.dart`), `helper_whitelist` (wildcards matching `method`, `Target.method`) and `strict_mode` (default `false`; `true` reports any operator, single-part interpolation and any call).
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): include globs `**/mappers/**`, `**/formatters/**`, `**/adapters/**`; exclude globs `**/test/**`, `**/tests/**`, `**/*_test.dart`; no helper whitelist; strict mode off.
 
 ## Limits
 

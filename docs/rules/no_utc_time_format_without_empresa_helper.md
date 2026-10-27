@@ -10,7 +10,7 @@
 
 ## What it detects
 
-In files matching the include globs: `.format(x)` calls on a `DateFormat` time pattern (pattern with `H`, `h`, `k`, `K`, `j` or `J` outside quotes, `DateFormat.Hm/Hms/j/jm/jms/jmv/jmz/jmsvz`, variables initialized with one, or receivers whose name contains `time`, `hour`, `hora`, `hm`, `hms`, `heure`, `minute` or `clock`) where `x` is not an invocation matching `allowed_wrappers`, and is not a local variable whose last declaration/assignment in an enclosing block of the same function used an approved wrapper.
+In files matching the include globs: `.format(x)` calls on a `DateFormat` time pattern (pattern with `H`, `h`, `k`, `K`, `j` or `J` outside quotes, `DateFormat.Hm/Hms/j/jm/jms/jmv/jmz/jmsvz`, variables initialized with one, or receivers whose name contains `time`, `hour`, `hora`, `hm`, `hms`, `heure`, `minute` or `clock`) where `x` is not an invocation of an approved wrapper, and is not a local variable whose last declaration/assignment in an enclosing block of the same function used an approved wrapper.
 
 ## Why
 
@@ -34,7 +34,7 @@ In any project outside WorkTracker that does not adopt the same convention. Your
 
 ## Options
 
-Sibling keys: `include_globs` (default `**/presentation/**`, `**/screens/**`, `**/widgets/**`, `**/ui/**`), `exclude_globs` (default `**/test/**`, `**/tests/**`, `**/*_test.dart`), `allowed_wrappers` (default `*.toEmpresaLocalTime`, `EmpresaDateTimeFormatter.*`) and `allow_utc_debug_context` (default `false`; `true` skips calls inside an interpolation whose text contains `UTC`).
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): include globs `**/presentation/**`, `**/screens/**`, `**/widgets/**`, `**/ui/**`; exclude globs `**/test/**`, `**/tests/**`, `**/*_test.dart`; approved wrappers `*.toEmpresaLocalTime`, `EmpresaDateTimeFormatter.*`; calls inside a `UTC`-labelled interpolation are still reported.
 
 ## Limits
 

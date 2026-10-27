@@ -34,7 +34,7 @@ In any project outside WorkTracker that does not adopt the same convention. Your
 
 ## Options
 
-Sibling keys `include_globs` (default `["**/presentation/**"]`) and `exclude_globs` (default `**/theme/**`, `**/*_painter.dart`, `**/test/**`, `**/tests/**`, `**/*_test.dart`). Providing a list replaces its default.
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): include glob `**/presentation/**`; exclude globs `**/theme/**`, `**/*_painter.dart`, `**/test/**`, `**/tests/**`, `**/*_test.dart`.
 
 ## Limits
 

@@ -10,7 +10,7 @@
 
 ## What it detects
 
-Calls to a method named `toLocal` with no arguments, in files matching the include globs and not the exclude globs, unless the receiver matches `allowed_receivers` or the call is inside an invocation matching `allowed_wrappers`.
+Calls to a method named `toLocal` with no arguments, in files matching the include globs.
 
 ## Why
 
@@ -34,7 +34,7 @@ In any project outside WorkTracker that does not adopt the same convention. Your
 
 ## Options
 
-Sibling keys: `include_globs` (default `**/presentation/**`, `**/ui/**`, `**/screens/**`, `**/widgets/**`), `exclude_globs`, `allowed_receivers` (wildcards matched against the receiver source) and `allowed_wrappers` (wildcards matched against `method`, `Target.method`; `allowed_helpers` is a fallback alias).
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): include globs `**/presentation/**`, `**/ui/**`, `**/screens/**`, `**/widgets/**`; no exclude globs, allowed receivers or allowed wrappers.
 
 ## Limits
 

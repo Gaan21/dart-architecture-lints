@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 import 'package:dart_architecture_lints/result_return_types.dart';
 
@@ -9,10 +9,12 @@ import 'package:dart_architecture_lints/result_return_types.dart';
 /// getters and private helpers may return values directly.
 class DataSourcesReturnResult extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [DataSourcesReturnResult].
-  const DataSourcesReturnResult() : super(code: _code);
+  DataSourcesReturnResult() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'datasources_return_result',
+    'Los métodos de DataSource deben retornar Future<Result<T>>, Result<T>, o Stream<Result<T>> para manejo de errores consistente en la data layer.',
     correctionMessage:
         'Cambia el tipo de retorno a Future<Result<TipoRetorno>> y envuelve con Success() para datos exitosos o Failure() para errores.\n'
         'Ejemplo:\n'
@@ -29,19 +31,16 @@ class DataSourcesReturnResult extends GeneratedSkippingDartLintRule {
         '      }\n'
         '    }\n'
         '  }',
-    name: 'datasources_return_result',
-    problemMessage:
-        'Los métodos de DataSource deben retornar Future<Result<T>>, Result<T>, o Stream<Result<T>> para manejo de errores consistente en la data layer.',
   );
 
   /// Executes the lint rule to detect DataSource methods that do not return `Result`.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final uri = resolver.source.uri;
+    final uri = resolver.uri;
     final path = uri.path;
 
     // Solo aplicar en data/dataSources/local/ y data/dataSources/remote/
@@ -50,7 +49,7 @@ class DataSourcesReturnResult extends GeneratedSkippingDartLintRule {
     }
 
     context.registry.addClassDeclaration((ClassDeclaration node) {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
 
       // Solo verificar clases que terminan en "DataSource" o implementan XDataSource
       if (!className.endsWith('DataSource') &&
@@ -59,7 +58,7 @@ class DataSourcesReturnResult extends GeneratedSkippingDartLintRule {
       }
 
       // Verificar métodos públicos de la clase
-      for (final member in node.members) {
+      for (final member in node.body.members) {
         if (member is MethodDeclaration) {
           _checkMethod(member, reporter);
         }

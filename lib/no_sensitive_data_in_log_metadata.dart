@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Lint rule that prevents sensitive data from being logged.
@@ -12,12 +12,11 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// Prohibited keys: token, password, authorization, cookie, secret,
 /// apiKey, refreshToken, accessToken.
 class NoSensitiveDataInLogMetadataLint extends GeneratedSkippingDartLintRule {
-  const NoSensitiveDataInLogMetadataLint() : super(code: _code);
+  NoSensitiveDataInLogMetadataLint() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'no_sensitive_data_in_log_metadata',
-    problemMessage:
-        'Dato sensible detectado en logging. Loguear tokens, passwords o '
+    'no_sensitive_data_in_log_metadata',
+    'Dato sensible detectado en logging. Loguear tokens, passwords o '
         'credenciales es un riesgo de seguridad y compliance (OWASP A09, GDPR). '
         'Los logs pueden persistir en texto plano en sistemas de observabilidad.',
     correctionMessage:
@@ -53,19 +52,13 @@ class NoSensitiveDataInLogMetadataLint extends GeneratedSkippingDartLintRule {
   ];
 
   /// Logger methods to check.
-  static const _logMethods = {
-    'debug',
-    'info',
-    'warning',
-    'error',
-    'critical',
-  };
+  static const _logMethods = {'debug', 'info', 'warning', 'error', 'critical'};
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     final filePath = resolver.path;
     final normalized = filePath.replaceAll('\\', '/');
@@ -102,8 +95,8 @@ class NoSensitiveDataInLogMetadataLint extends GeneratedSkippingDartLintRule {
     DiagnosticReporter reporter,
   ) {
     for (final arg in args.arguments) {
-      if (arg is NamedExpression && arg.name.label.name == 'metadata') {
-        final expr = arg.expression;
+      if (arg is NamedArgument && arg.name.lexeme == 'metadata') {
+        final expr = arg.argumentExpression;
         if (expr is SetOrMapLiteral) {
           _checkMapLiteral(expr, methodName, reporter);
         }
@@ -132,8 +125,8 @@ class NoSensitiveDataInLogMetadataLint extends GeneratedSkippingDartLintRule {
           reporter.atNode(
             element,
             LintCode(
-              name: 'no_sensitive_data_in_log_metadata',
-              problemMessage: 'Clave sensible "$keyName" en metadata de '
+              'no_sensitive_data_in_log_metadata',
+              'Clave sensible "$keyName" en metadata de '
                   'AppLoggerService.$methodName(). '
                   'Loguear "$keyName" es un riesgo de seguridad: los logs '
                   'persisten en texto plano en sistemas de observabilidad '
@@ -159,7 +152,7 @@ class NoSensitiveDataInLogMetadataLint extends GeneratedSkippingDartLintRule {
   ) {
     for (final arg in args.arguments) {
       // Skip named arguments (already handled metadata)
-      if (arg is NamedExpression) continue;
+      if (arg is NamedArgument) continue;
 
       if (arg is StringLiteral) {
         final value = arg.stringValue;
@@ -186,13 +179,14 @@ class NoSensitiveDataInLogMetadataLint extends GeneratedSkippingDartLintRule {
         reporter.atNode(
           node,
           LintCode(
-            name: 'no_sensitive_data_in_log_metadata',
-            problemMessage: 'Posible dato sensible en mensaje de '
+            'no_sensitive_data_in_log_metadata',
+            'Posible dato sensible en mensaje de '
                 'AppLoggerService.$methodName(). '
                 'Se detectó un patrón de credencial en el literal de texto. '
                 'Los logs con credenciales violan OWASP A09 y pueden exponer '
                 'datos en sistemas de observabilidad.',
-            correctionMessage: 'Elimina la credencial del mensaje. '
+            correctionMessage:
+                'Elimina la credencial del mensaje. '
                 'Usa identificadores no sensibles para trazabilidad. '
                 'Si necesitas confirmar presencia de un token, loguea solo '
                 '"tokenPresent: true" sin el valor.',
@@ -217,13 +211,13 @@ class NoSensitiveDataInLogMetadataLint extends GeneratedSkippingDartLintRule {
             reporter.atNode(
               node,
               LintCode(
-                name: 'no_sensitive_data_in_log_metadata',
-                problemMessage:
-                    'Posible dato sensible en mensaje interpolado de '
+                'no_sensitive_data_in_log_metadata',
+                'Posible dato sensible en mensaje interpolado de '
                     'AppLoggerService.$methodName(). '
                     'Se detectó un patrón de credencial. '
                     'Los logs con credenciales violan OWASP A09.',
-                correctionMessage: 'Elimina la credencial del mensaje. '
+                correctionMessage:
+                    'Elimina la credencial del mensaje. '
                     'Usa identificadores no sensibles para trazabilidad.',
               ),
             );

@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that enforces AppException subclasses to define a stable 'code'
@@ -12,12 +12,11 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// instead of exposing a raw exception message.
 class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [AppExceptionMustDefineCode].
-  const AppExceptionMustDefineCode() : super(code: _code);
+  AppExceptionMustDefineCode() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'app_exception_must_define_code',
-    problemMessage:
-        'Los subtipos de AppException deben definir un "code" estable para i18n. '
+    'app_exception_must_define_code',
+    'Los subtipos de AppException deben definir un "code" estable para i18n. '
         'Sin code, la capa de presentación no puede localizar el mensaje de error.',
     correctionMessage:
         'Añade un campo "code" o pásalo al super constructor.\n'
@@ -31,11 +30,11 @@ class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final path = resolver.source.uri.path;
+    final path = resolver.uri.path;
     if (path.contains('/test/') ||
         path.contains('/integration_test/') ||
         path.endsWith('_test.dart')) {
@@ -47,7 +46,7 @@ class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
       if (node.abstractKeyword != null) return;
 
       // Skip private classes
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       if (className.startsWith('_')) return;
 
       // Must directly extend AppException
@@ -67,11 +66,11 @@ class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
       InstanceCreationExpression node,
     ) {
       if (!_isAppExceptionInstance(node)) return;
-      final NamedExpression? codeArg = _findNamedArg(node.argumentList, 'code');
+      final NamedArgument? codeArg = _findNamedArg(node.argumentList, 'code');
       if (codeArg == null) return;
-      if (codeArg.expression is StringLiteral ||
-          codeArg.expression is StringInterpolation) {
-        reporter.atNode(codeArg.expression, _code);
+      if (codeArg.argumentExpression is StringLiteral ||
+          codeArg.argumentExpression is StringInterpolation) {
+        reporter.atNode(codeArg.argumentExpression, _code);
       }
     });
   }
@@ -95,9 +94,9 @@ class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
         typeName.endsWith('Failure');
   }
 
-  NamedExpression? _findNamedArg(ArgumentList args, String name) {
+  NamedArgument? _findNamedArg(ArgumentList args, String name) {
     for (final arg in args.arguments) {
-      if (arg is NamedExpression && arg.name.label.name == name) {
+      if (arg is NamedArgument && arg.name.lexeme == name) {
         return arg;
       }
     }
@@ -112,7 +111,7 @@ class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
   /// - Constructor parameter named 'code' (including `this.code`)
   /// - Super constructor call with named argument `code:`
   bool _hasCodeDefined(ClassDeclaration node) {
-    for (final member in node.members) {
+    for (final member in node.body.members) {
       // Field: final String code = '...'; or @override final String code;
       if (member is FieldDeclaration) {
         for (final variable in member.fields.variables) {
@@ -137,7 +136,7 @@ class AppExceptionMustDefineCode extends GeneratedSkippingDartLintRule {
         for (final initializer in member.initializers) {
           if (initializer is SuperConstructorInvocation) {
             for (final arg in initializer.argumentList.arguments) {
-              if (arg is NamedExpression && arg.name.label.name == 'code') {
+              if (arg is NamedArgument && arg.name.lexeme == 'code') {
                 return true;
               }
             }

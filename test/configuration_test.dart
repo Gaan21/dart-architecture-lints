@@ -1,25 +1,17 @@
 import 'dart:io';
-import 'package:analyzer/file_system/physical_file_system.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
-import 'package:dart_architecture_lints/dart_architecture_lints.dart';
-import 'package:dart_architecture_lints/require_explicit_types.dart';
-import 'package:package_config/package_config.dart';
-import 'package:test/test.dart';
-import '../tool/generate_rule_tables.dart' as generator;
 
-CustomLintConfigs parse(String path) => CustomLintConfigs.parse(
-  PhysicalResourceProvider.INSTANCE.getFile(File(path).absolute.path),
-  PackageConfig([]),
-);
+import 'package:test/test.dart';
+
+import '../tool/generate_rule_tables.dart' as generator;
+import 'rule_test_support.dart';
 
 /// The single YAML fence under the README "Disable a rule" heading.
 String readmeDisableExample() {
   final readme = File('README.md').readAsStringSync();
   final section = readme.split('\n## Disable a rule\n');
   expect(section, hasLength(2), reason: 'exactly one "Disable a rule" section');
-  final match = RegExp(
-    r'```yaml\n([\s\S]*?)```',
-  ).firstMatch(section[1].split('\n## ').first);
+  final match = RegExp(r'```yaml\n([\s\S]*?)```')
+      .firstMatch(section[1].split('\n## ').first);
   expect(match, isNotNull);
   return match!.group(1)!;
 }
@@ -45,37 +37,36 @@ void main() {
     }, isEmpty);
   });
 
-  test('every registered rule is enabled by default', () {
-    final empty = CustomLintConfigs.parse(null, PackageConfig([]));
+  test('every registered rule is a warning rule, enabled by default', () {
+    final registry = generator.recordRegistrations();
     expect(rules, hasLength(52));
-    expect([
-      for (final rule in rules.values)
-        if (!rule.enabledByDefault || !rule.isEnabled(empty)) rule.code.name,
-    ], isEmpty);
+    expect(registry.lintRules, isEmpty);
+    expect(registry.warningRules, hasLength(rules.length));
+    expect({
+      for (final rule in pluginRegistry().enabled({})) rule.name,
+    }, rules.keys.toSet());
+  });
+
+  test('every rule reports at info severity by default', () {
+    expect(
+      {for (final rule in rules.values) generator.defaultSeverity(rule)},
+      {'info'},
+    );
   });
 
   test(
-    'README disable example is consumed by the installed custom_lint parser',
+    'README disable example is consumed by the analyzer plugin options parser',
     () async {
-      final directory = await Directory.systemTemp.createTemp('disable_rule_');
-      try {
-        final file = File('${directory.path}/analysis_options.yaml');
-        await file.writeAsString(readmeDisableExample());
-        final configs = parse(file.path);
-        final selected = createPlugin().getLintRules(configs);
-        final disabled = {
-          for (final rule in selected)
-            if (!rule.isEnabled(configs)) rule.code.name,
-        };
-        expect(disabled, {'domain_entities_must_use_freezed'});
-        expect(
-          selected.whereType<RequireExplicitTypes>().single.policy,
-          'selective',
-        );
-        expect(file.readAsStringSync(), contains('    method_order: warning'));
-      } finally {
-        await directory.delete(recursive: true);
-      }
+      final yaml = readmeDisableExample().replaceFirst(
+        RegExp(r'    git:\n      url: [^\n]+\n      ref: [^\n]+\n'),
+        '    path: ${Directory.current.path}\n',
+      );
+      expect(yaml, contains('    path: '));
+      final selection = await pluginSelection(yaml);
+      expect(rules.keys.toSet().difference(selection.enabled), {
+        'domain_entities_must_use_freezed',
+      });
+      expect(selection.severities['method_order'], 'warning');
     },
   );
 
@@ -99,23 +90,19 @@ void main() {
     }
   });
 
-  test(
-    'generator check passes and unknown arguments fail',
-    () async {
-      final check = await Process.run(Platform.resolvedExecutable, [
-        'run',
-        'tool/generate_rule_tables.dart',
-        '--check',
-      ]);
-      expect(check.exitCode, 0, reason: '${check.stdout}\n${check.stderr}');
-      final unknown = await Process.run(Platform.resolvedExecutable, [
-        'run',
-        'tool/generate_rule_tables.dart',
-        '--guidance-root',
-      ]);
-      expect(unknown.exitCode, isNonZero);
-      expect(unknown.stderr, contains('Unknown argument'));
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+  test('generator check passes and unknown arguments fail', () async {
+    final check = await Process.run(Platform.resolvedExecutable, [
+      'run',
+      'tool/generate_rule_tables.dart',
+      '--check',
+    ]);
+    expect(check.exitCode, 0, reason: '${check.stdout}\n${check.stderr}');
+    final unknown = await Process.run(Platform.resolvedExecutable, [
+      'run',
+      'tool/generate_rule_tables.dart',
+      '--guidance-root',
+    ]);
+    expect(unknown.exitCode, isNonZero);
+    expect(unknown.stderr, contains('Unknown argument'));
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

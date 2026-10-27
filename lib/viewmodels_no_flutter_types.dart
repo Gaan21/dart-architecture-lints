@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that prevents ViewModels from using Flutter-specific types
@@ -10,29 +10,27 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// Flutter types should go in UiState classes.
 class ViewModelsNoFlutterTypesLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [ViewModelsNoFlutterTypesLint].
-  const ViewModelsNoFlutterTypesLint() : super(code: _code);
+  ViewModelsNoFlutterTypesLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    name: 'viewmodels_no_flutter_types',
-    problemMessage:
-        'ViewModel should not use Flutter types (TextEditingController, FocusNode, GlobalKey, etc.). This couples ViewModel to Flutter and makes testing difficult.',
-    correctionMessage:
-        'Move Flutter types to UiState class. ViewModel should be UI-agnostic and testable without flutter_test.',
+    'viewmodels_no_flutter_types',
+    'ViewModel should not use Flutter types (TextEditingController, FocusNode, GlobalKey, etc.). This couples ViewModel to Flutter and makes testing difficult.',
+    correctionMessage: 'Move Flutter types to UiState class. ViewModel should be UI-agnostic and testable without flutter_test.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addClassDeclaration((ClassDeclaration node) {
       // Only check ViewModel classes
       if (!_isViewModelClass(node)) return;
 
       // Check fields for Flutter types
-      for (final member in node.members) {
+      for (final member in node.body.members) {
         if (member is FieldDeclaration) {
           final type = member.fields.type;
           if (type != null && _isFlutterType(type)) {
@@ -45,7 +43,7 @@ class ViewModelsNoFlutterTypesLint extends GeneratedSkippingDartLintRule {
 
   /// Checks if a class is a ViewModel class.
   bool _isViewModelClass(ClassDeclaration classDecl) {
-    final className = classDecl.name.lexeme;
+    final className = classDecl.namePart.typeName.lexeme;
     return className.contains('ViewModel');
   }
 
@@ -61,7 +59,7 @@ class ViewModelsNoFlutterTypesLint extends GeneratedSkippingDartLintRule {
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         final firstArg = typeArgs.arguments.first;
         if (firstArg is NamedType && firstArg.name.lexeme == 'NavigatorState') {
-          return false;  // ✅ Allow GlobalKey<NavigatorState>
+          return false; // ✅ Allow GlobalKey<NavigatorState>
         }
       }
     }
@@ -74,7 +72,7 @@ class ViewModelsNoFlutterTypesLint extends GeneratedSkippingDartLintRule {
       'TabController',
       'PageController',
       'FocusNode',
-      'GlobalKey',  // GlobalKey without NavigatorState is still prohibited
+      'GlobalKey', // GlobalKey without NavigatorState is still prohibited
       'Color',
       'TextStyle',
       'EdgeInsets',

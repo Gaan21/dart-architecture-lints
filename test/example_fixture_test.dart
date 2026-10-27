@@ -1,28 +1,25 @@
 import 'dart:io';
-import 'package:analyzer/dart/analysis/results.dart';
-import 'package:analyzer/dart/analysis/utilities.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+
 import 'package:test/test.dart';
+
 import '../tool/example_docs.dart';
 import '../tool/generate_rule_tables.dart' as generator;
+import 'rule_test_support.dart';
 
 void main() {
   test(
-    'checked example passes every registered rule with default options',
+    'checked example passes every registered rule with built-in defaults',
     () async {
-      final registered = generator.registeredRules();
-      final rules = registered.values.whereType<DartLintRule>().toList();
-      expect(rules, hasLength(registered.length));
+      final rules = generator.registeredRules().values.toList();
+      expect(rules, hasLength(52));
       for (final path in checkedExamples()) {
-        final file = File(path).absolute;
-        final result = await resolveFile(path: file.path) as ResolvedUnitResult;
-        expect(result.diagnostics, isEmpty, reason: path);
-        for (final rule in rules) {
-          expect(
-            await rule.testAnalyzeAndRun(file),
-            isEmpty,
-            reason: '$path: ${rule.code.name}',
-          );
+        final results = await runRules(
+          rules,
+          File(path).readAsStringSync(),
+          path: path,
+        );
+        for (final entry in results.entries) {
+          expect(entry.value, isEmpty, reason: '$path: ${entry.key}');
         }
       }
       final executed = await Process.run(Platform.resolvedExecutable, [

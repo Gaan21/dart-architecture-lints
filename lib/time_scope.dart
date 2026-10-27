@@ -9,17 +9,6 @@ class TimeScope {
     this.clockGlobs = const [],
   });
 
-  factory TimeScope.fromJson(Map<String, Object?> options) => TimeScope(
-    includeGlobs: readStringListOption(
-      options,
-      'include_globs',
-      fallback: const ['**'],
-    ),
-    excludeGlobs: readStringListOption(options, 'exclude_globs'),
-    civilGlobs: readStringListOption(options, 'civil_date_globs'),
-    clockGlobs: readStringListOption(options, 'clock_globs'),
-  );
-
   final List<String> includeGlobs, excludeGlobs, civilGlobs, clockGlobs;
   bool includes(String path) =>
       matchesAnyGlob(path, includeGlobs) && !matchesAnyGlob(path, excludeGlobs);

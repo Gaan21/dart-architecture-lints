@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Lint rule that prevents direct error/warning logging in data and domain layers.
@@ -11,12 +11,11 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// double-logging and noise.
 class NoDirectErrorLoggingInDataDomainLint
     extends GeneratedSkippingDartLintRule {
-  const NoDirectErrorLoggingInDataDomainLint() : super(code: _code);
+  NoDirectErrorLoggingInDataDomainLint() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'no_direct_error_logging_in_data_domain',
-    problemMessage:
-        'Llamada directa a AppLoggerService.error/warning en capa data/domain. '
+    'no_direct_error_logging_in_data_domain',
+    'Llamada directa a AppLoggerService.error/warning en capa data/domain. '
         'Los errores ya se centralizan en Guard/ErrorReporter; este log duplica '
         'la señal y genera ruido en observabilidad.',
     correctionMessage:
@@ -39,9 +38,9 @@ class NoDirectErrorLoggingInDataDomainLint
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     final filePath = resolver.path;
 
@@ -79,9 +78,8 @@ class NoDirectErrorLoggingInDataDomainLint
       reporter.atNode(
         node,
         LintCode(
-          name: 'no_direct_error_logging_in_data_domain',
-          problemMessage:
-              'Llamada directa a AppLoggerService.$level() en capa data/domain. '
+          'no_direct_error_logging_in_data_domain',
+          'Llamada directa a AppLoggerService.$level() en capa data/domain. '
               'Los errores ya se centralizan en Guard/ErrorReporter; este log '
               'duplica la señal y genera '
               'ruido en observabilidad.',
@@ -114,9 +112,8 @@ class NoDirectErrorLoggingInDataDomainLint
       reporter.atNode(
         node,
         LintCode(
-          name: 'no_direct_error_logging_in_data_domain',
-          problemMessage:
-              'Llamada directa a AppLoggerService.$level() en capa data/domain. '
+          'no_direct_error_logging_in_data_domain',
+          'Llamada directa a AppLoggerService.$level() en capa data/domain. '
               'Los errores ya se centralizan en Guard/ErrorReporter; este log '
               'duplica la señal y genera '
               'ruido en observabilidad.',

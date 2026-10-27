@@ -1,5 +1,5 @@
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
@@ -15,7 +15,7 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// methods that are publicly accessible, and finally the private/internal methods.
 class MethodOrderRule extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [MethodOrderRule].
-  const MethodOrderRule() : super(code: _code);
+  MethodOrderRule() : super(code: _code);
 
   /// The lint code associated with this rule.
   ///
@@ -23,11 +23,9 @@ class MethodOrderRule extends GeneratedSkippingDartLintRule {
   /// - **problemMessage**: Description of the problem when the order is incorrect.
   /// - **correctionMessage**: Suggestion to rearrange methods to adhere to the expected order.
   static const _code = LintCode(
-    name: 'method_order',
-    problemMessage:
-        'Methods are not in the correct order. Expected: getters/setters first, then @override methods, then public methods, then private methods.',
-    correctionMessage:
-        'Move this method to maintain the order: getters/setters → @override methods → public methods → private methods. This improves code readability and consistency.',
+    'method_order',
+    'Methods are not in the correct order. Expected: getters/setters first, then @override methods, then public methods, then private methods.',
+    correctionMessage: 'Move this method to maintain the order: getters/setters → @override methods → public methods → private methods. This improves code readability and consistency.',
   );
 
   /// The main entry point of the lint rule, which traverses Dart code to enforce
@@ -37,24 +35,30 @@ class MethodOrderRule extends GeneratedSkippingDartLintRule {
   /// is used to log any lint violations. The [context] provides additional information
   /// about the custom lint environment.
   @override
-  void runOnNonGenerated(CustomLintResolver resolver,
-      DiagnosticReporter reporter, CustomLintContext context) {
-    context.registry.addClassDeclaration(
-      (ClassDeclaration classDeclaration) {
-        final List<MethodDeclaration> methodDeclarations =
-            classDeclaration.members.whereType<MethodDeclaration>().toList();
+  void runOnNonGenerated(
+    LintFile resolver,
+    DiagnosticReporter reporter,
+    LintRunContext context,
+  ) {
+    context.registry.addClassDeclaration((ClassDeclaration classDeclaration) {
+      final List<MethodDeclaration> methodDeclarations = classDeclaration
+          .body
+          .members
+          .whereType<MethodDeclaration>()
+          .toList();
 
-        _checkMethodOrder(methodDeclarations, reporter);
-      },
-    );
+      _checkMethodOrder(methodDeclarations, reporter);
+    });
   }
 
   /// Checks the order of methods within a class to ensure they follow the desired order.
   ///
   /// The [methodDeclarations] parameter contains the list of methods in the class.
   /// The [errorReporter] is used to report any violations found.
-  void _checkMethodOrder(List<MethodDeclaration> methodDeclarations,
-      DiagnosticReporter errorReporter) {
+  void _checkMethodOrder(
+    List<MethodDeclaration> methodDeclarations,
+    DiagnosticReporter errorReporter,
+  ) {
     bool foundOverrideMethod = false;
     bool foundPublicMethod = false;
     bool foundPrivateMethod = false;
@@ -90,9 +94,11 @@ class MethodOrderRule extends GeneratedSkippingDartLintRule {
   ///
   /// Returns `true` if the method is annotated with `@override`, otherwise `false`.
   bool _isOverride(MethodDeclaration methodDeclaration) {
-    return methodDeclaration.metadata.any((Annotation annotation) =>
-        annotation.name.name == 'override' &&
-        annotation.atSign.type.lexeme == '@');
+    return methodDeclaration.metadata.any(
+      (Annotation annotation) =>
+          annotation.name.name == 'override' &&
+          annotation.atSign.type.lexeme == '@',
+    );
   }
 
   /// Determines if a given [methodDeclaration] is a public method.

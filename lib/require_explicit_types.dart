@@ -1,47 +1,33 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 import 'package:analyzer/dart/element/type.dart';
+
 import 'timezone_safety_utils.dart';
 
 /// Explicit annotations under a strict legacy or selective boundary policy.
 class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [RequireExplicitTypes].
-  const RequireExplicitTypes({
-    this.policy = 'strict',
-    this.localNames = const [],
-  }) : super(code: _code);
+  RequireExplicitTypes({this.policy = 'strict', this.localNames = const []})
+    : super(code: _code);
 
   final String policy;
   final List<String> localNames;
 
-  static RequireExplicitTypes fromConfigs(CustomLintConfigs configs) {
-    final options = readRuleOptions(configs, _code.name);
-    final policy = options['policy'] ?? 'strict';
-    if (policy != 'strict' && policy != 'selective') {
-      throw ArgumentError.value(policy, 'policy', 'Use strict or selective');
-    }
-    return RequireExplicitTypes(
-      policy: policy as String,
-      localNames: readStringListOption(options, 'local_names'),
-    );
-  }
-
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'require_explicit_types',
+    'An explicit type is required by the configured typing policy.',
     correctionMessage: 'Add a type annotation at this selected boundary.',
-    name: 'require_explicit_types',
-    problemMessage:
-        'An explicit type is required by the configured typing policy.',
   );
 
   /// Executes the lint rule to detect variables without explicit type annotations.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     if (policy == 'selective') {
       context.registry.addMethodDeclaration((node) {
@@ -59,9 +45,16 @@ class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
           reporter.atToken(node.name, _code);
         }
       });
-      context.registry.addSimpleFormalParameter((node) {
+      context.registry.addRegularFormalParameter((node) {
+        // Plain parameters only; the range excludes a default value.
+        if (node.functionTypedSuffix != null) return;
         if (_publicSignature(node) && node.type == null) {
-          reporter.atNode(node, _code);
+          final end = (node.name ?? node.endToken).end;
+          reporter.atOffset(
+            diagnosticCode: _code,
+            offset: node.offset,
+            length: end - node.offset,
+          );
         }
       });
       context.registry.addTopLevelVariableDeclaration((node) {
@@ -98,7 +91,7 @@ class RequireExplicitTypes extends GeneratedSkippingDartLintRule {
   bool _public(String name, AstNode node) {
     if (name.startsWith('_')) return false;
     final owner = node.thisOrAncestorOfType<ClassDeclaration>();
-    return owner == null || !owner.name.lexeme.startsWith('_');
+    return owner == null || !owner.namePart.typeName.lexeme.startsWith('_');
   }
 
   bool _publicSignature(AstNode node) {

@@ -1,18 +1,18 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
+
 import 'generated_skipping_dart_lint_rule.dart';
 import 'resource_types.dart';
 
 /// Checks locally owned controllers without taking ownership of injected ones.
 class StreamControllerMustClose extends GeneratedSkippingDartLintRule {
-  const StreamControllerMustClose() : super(code: _code);
+  StreamControllerMustClose() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'streamcontroller_must_close',
-    problemMessage:
-        'An owned StreamController is not closed on every normal dispose exit.',
+    'streamcontroller_must_close',
+    'An owned StreamController is not closed on every normal dispose exit.',
     correctionMessage:
         'Close this owned controller in dispose or a local cleanup helper. '
         'Do not close borrowed controllers; ownership must remain with their creator.',
@@ -20,9 +20,9 @@ class StreamControllerMustClose extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addClassDeclaration((node) {
       final element = node.declaredFragment?.element;
@@ -38,11 +38,11 @@ class StreamControllerMustClose extends GeneratedSkippingDartLintRule {
           )) {
         return;
       }
-      final methods = node.members.whereType<MethodDeclaration>().toList();
+      final methods = node.body.members.whereType<MethodDeclaration>().toList();
       final dispose = methods
           .where((method) => method.name.lexeme == 'dispose')
           .firstOrNull;
-      for (final field in node.members.whereType<FieldDeclaration>()) {
+      for (final field in node.body.members.whereType<FieldDeclaration>()) {
         if (field.isStatic) continue;
         for (final variable in field.fields.variables) {
           final fieldElement = variable.declaredFragment?.element;
@@ -56,7 +56,7 @@ class StreamControllerMustClose extends GeneratedSkippingDartLintRule {
           final initializers = <Expression>[
             if (variable.initializer != null) variable.initializer!,
             for (final constructor
-                in node.members.whereType<ConstructorDeclaration>())
+                in node.body.members.whereType<ConstructorDeclaration>())
               for (final initializer
                   in constructor.initializers
                       .whereType<ConstructorFieldInitializer>())

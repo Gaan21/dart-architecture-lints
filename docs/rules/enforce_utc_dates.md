@@ -32,7 +32,7 @@ Your data layer stores civil (calendar) values in these folders without separate
 
 ## Options
 
-Sibling keys: `include_globs` (default `["**"]`, cannot widen the data-layer segment filter), `exclude_globs`, `civil_date_globs` (allows the unnamed `DateTime(...)` constructor) and `clock_globs` (allows `DateTime.now()`).
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): include glob `**` (the data-layer segment filter still applies), no exclude globs, and no civil-date or clock exception globs.
 
 ## Limits
 

@@ -1,17 +1,18 @@
 // ignore_for_file: deprecated_member_use
 
-import 'dart:io';
-
-import 'package:analyzer/error/error.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/diagnostic/diagnostic.dart';
 import 'package:test/test.dart';
+import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+
+import 'rule_test_support.dart';
+
 import 'package:dart_architecture_lints/no_domain_entities_in_presentation_ui.dart';
 
 void main() {
   group('no_domain_entities_in_presentation_ui', () {
     test('reports entities barrel import in presentation/screens', () async {
       final errors = await _runRule(
-        rule: const NoDomainEntitiesInPresentationUiLint(),
+        rule: NoDomainEntitiesInPresentationUiLint(),
         relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
         source: '''
 import 'package:lint_test_project/domain/entities/entities.dart';
@@ -30,7 +31,7 @@ class DashboardScreen {}
       'reports domain entities file import in presentation/widgets',
       () async {
         final errors = await _runRule(
-          rule: const NoDomainEntitiesInPresentationUiLint(),
+          rule: NoDomainEntitiesInPresentationUiLint(),
           relativeFilePath: 'lib/presentation/widgets/worker_tile.dart',
           source: '''
 import 'package:lint_test_project/domain/entities/worker_entity.dart';
@@ -50,7 +51,7 @@ class WorkerTile {}
       'does not report when file is explicit _ui_mapper exception',
       () async {
         final errors = await _runRule(
-          rule: const NoDomainEntitiesInPresentationUiLint(),
+          rule: NoDomainEntitiesInPresentationUiLint(),
           relativeFilePath:
               'lib/presentation/screens/incidencias/incidencias_ui_mapper.dart',
           source: '''
@@ -69,7 +70,7 @@ class IncidenciasUiMapper {}
 
     test('does not report ui model import in presentation/screens', () async {
       final errors = await _runRule(
-        rule: const NoDomainEntitiesInPresentationUiLint(),
+        rule: NoDomainEntitiesInPresentationUiLint(),
         relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
         source: '''
 import 'package:lint_test_project/presentation/models/worker_ui_model.dart';
@@ -86,7 +87,7 @@ class DashboardScreen {}
 
     test('defaults to the analyzed package, not another package', () async {
       final errors = await _runRule(
-        rule: const NoDomainEntitiesInPresentationUiLint(),
+        rule: NoDomainEntitiesInPresentationUiLint(),
         relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
         source: '''
 import 'package:work_tracker/domain/entities/entities.dart';
@@ -101,34 +102,31 @@ class DashboardScreen {}
       );
     });
 
-    test(
-      'explicit project_package_name overrides the analyzed package',
-      () async {
-        const source = '''
+    test('an explicit package name overrides the analyzed package', () async {
+      const source = '''
 import 'package:work_tracker/domain/entities/entities.dart';
 import 'package:lint_test_project/domain/entities/entities.dart';
 
 class DashboardScreen {}
 ''';
-        final errors = await _runRule(
-          rule: NoDomainEntitiesInPresentationUiLint(
-            config: NoDomainEntitiesInPresentationUiConfig.fromJson(const {
-              'project_package_name': 'work_tracker',
-            }),
+      final errors = await _runRule(
+        rule: NoDomainEntitiesInPresentationUiLint(
+          config: const NoDomainEntitiesInPresentationUiConfig(
+            projectPackageName: 'work_tracker',
           ),
-          relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
-          source: source,
-        );
+        ),
+        relativeFilePath: 'lib/presentation/screens/dashboard_screen.dart',
+        source: source,
+      );
 
-        expect(errors, hasLength(1));
-        expect(
-          source
-              .substring(errors.single.offset)
-              .startsWith("'package:work_tracker/"),
-          isTrue,
-        );
-      },
-    );
+      expect(errors, hasLength(1));
+      expect(
+        source
+            .substring(errors.single.offset)
+            .startsWith("'package:work_tracker/"),
+        isTrue,
+      );
+    });
 
     test('package name falls back to the analyzed pubspec name', () {
       expect(
@@ -149,7 +147,7 @@ class DashboardScreen {}
 
     test('does not report outside presentation/screens and widgets', () async {
       final errors = await _runRule(
-        rule: const NoDomainEntitiesInPresentationUiLint(),
+        rule: NoDomainEntitiesInPresentationUiLint(),
         relativeFilePath: 'lib/domain/usecases/get_worker_usecase.dart',
         source: '''
 import 'package:lint_test_project/domain/entities/entities.dart';
@@ -166,43 +164,20 @@ class GetWorkerUseCase {}
   });
 }
 
-Future<List<AnalysisError>> _runRule({
-  required DartLintRule rule,
+Future<List<Diagnostic>> _runRule({
+  required GeneratedSkippingDartLintRule rule,
   required String relativeFilePath,
   required String source,
-}) async {
-  final tempDir = await Directory.systemTemp.createTemp(
-    'presentation_domain_lint_test_',
-  );
-  try {
-    final pubspec = File('${tempDir.path}/pubspec.yaml');
-    await pubspec.writeAsString('''
-name: lint_test_project
-environment:
-  sdk: ">=3.5.0 <4.0.0"
-''');
+}) => runRule(
+  rule,
+  source,
+  path: relativeFilePath,
+  packageName: 'lint_test_project',
+  sdk: '>=3.5.0 <4.0.0',
+  packageConfig: true,
+  mustResolve: false,
+);
 
-    // A resolved package (as after `pub get`) gives lib files package: URIs.
-    final packageConfig = File(
-      '${tempDir.path}/.dart_tool/package_config.json',
-    );
-    await packageConfig.parent.create(recursive: true);
-    await packageConfig.writeAsString('''
-{"configVersion": 2, "packages": [
-  {"name": "lint_test_project", "rootUri": "../", "packageUri": "lib/"}
-]}
-''');
-
-    final file = File('${tempDir.path}/$relativeFilePath');
-    await file.parent.create(recursive: true);
-    await file.writeAsString(source);
-
-    return await rule.testAnalyzeAndRun(file);
-  } finally {
-    await tempDir.delete(recursive: true);
-  }
-}
-
-Set<String> _errorCodes(List<AnalysisError> errors) {
-  return errors.map((error) => error.errorCode.name).toSet();
+Set<String> _errorCodes(List<Diagnostic> errors) {
+  return errors.map((error) => error.diagnosticCode.lowerCaseName).toSet();
 }

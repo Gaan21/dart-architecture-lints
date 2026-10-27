@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Freezed convention: requires `@freezed`/`@Freezed` on concrete public classes
@@ -9,10 +9,12 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// prove deep immutability.
 class DomainEntitiesMustUseFreezed extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [DomainEntitiesMustUseFreezed].
-  const DomainEntitiesMustUseFreezed() : super(code: _code);
+  DomainEntitiesMustUseFreezed() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'domain_entities_must_use_freezed',
+    'Las entidades de domain deben declararse con @freezed para garantizar inmutabilidad y pattern matching.',
     correctionMessage:
         'Anota la clase con @freezed, cambia a const factory, y mueve los campos al factory constructor.\n'
         'Ejemplo:\n'
@@ -20,19 +22,16 @@ class DomainEntitiesMustUseFreezed extends GeneratedSkippingDartLintRule {
         '  class User with _\$User {\n'
         '    const factory User({required String id, required String name}) = _User;\n'
         '  }',
-    name: 'domain_entities_must_use_freezed',
-    problemMessage:
-        'Las entidades de domain deben declararse con @freezed para garantizar inmutabilidad y pattern matching.',
   );
 
   /// Executes the lint rule to detect domain entities without @freezed.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final uri = resolver.source.uri;
+    final uri = resolver.uri;
     final path = uri.path;
 
     // Solo aplicar en domain/entities/ y domain/value_objects/
@@ -48,7 +47,7 @@ class DomainEntitiesMustUseFreezed extends GeneratedSkippingDartLintRule {
       }
 
       // Ignorar clases privadas (comienzan con _)
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       if (className.startsWith('_')) {
         return;
       }

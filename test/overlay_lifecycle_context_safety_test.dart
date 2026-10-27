@@ -1,15 +1,16 @@
-import 'dart:io';
-
 import 'package:analyzer/diagnostic/diagnostic.dart';
 import 'package:dart_architecture_lints/overlay_lifecycle_context_safety.dart';
 import 'package:test/test.dart';
 
+import 'rule_test_support.dart';
+
 void main() {
   group('overlay_lifecycle_context_safety (AST)', () {
     // ── Pattern A — captured caller-owned controllers ──────────────────────
-    test('A: reports local TextEditingController captured by dialog builder',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'A: reports local TextEditingController captured by dialog builder',
+      () async {
+        final errors = await _runRule('''
 Future<void> open(BuildContext context) async {
   final TextEditingController controller = TextEditingController();
   await showDialog<void>(
@@ -20,12 +21,14 @@ Future<void> open(BuildContext context) async {
   controller.dispose();
 }
 ''');
-      expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
-    });
+        expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
+      },
+    );
 
-    test('A: reports inferred local controller captured by sheet builder',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'A: reports inferred local controller captured by sheet builder',
+      () async {
+        final errors = await _runRule('''
 Future<void> open(BuildContext context) async {
   final controller = TextEditingController();
   await showModalBottomSheet<void>(
@@ -34,13 +37,15 @@ Future<void> open(BuildContext context) async {
   );
 }
 ''');
-      expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
-    });
+        expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
+      },
+    );
 
     // ── Pattern B — captured caller BuildContext for inherited lookups ──────
-    test('B: reports AppLocalizations.of(callerContext) inside dialog builder',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'B: reports AppLocalizations.of(callerContext) inside dialog builder',
+      () async {
+        final errors = await _runRule('''
 void open(BuildContext context) {
   showDialog<void>(
     context: context,
@@ -48,12 +53,14 @@ void open(BuildContext context) {
   );
 }
 ''');
-      expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
-    });
+        expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
+      },
+    );
 
-    test('B: reports context.read<T>() with caller context inside sheet builder',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'B: reports context.read<T>() with caller context inside sheet builder',
+      () async {
+        final errors = await _runRule('''
 void open(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
@@ -61,12 +68,14 @@ void open(BuildContext context) {
   );
 }
 ''');
-      expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
-    });
+        expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
+      },
+    );
 
-    test('A: reports local controller captured by MaterialPageRoute builder',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'A: reports local controller captured by MaterialPageRoute builder',
+      () async {
+        final errors = await _runRule('''
 void open(BuildContext context) {
   final controller = TextEditingController();
   final route = MaterialPageRoute<void>(
@@ -75,12 +84,14 @@ void open(BuildContext context) {
   route.builder(context);
 }
 ''');
-      expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
-    });
+        expect(_codes(errors), contains('overlay_lifecycle_context_safety'));
+      },
+    );
 
-    test('FP: showTimePicker builder using its own ctx is not reported',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'FP: showTimePicker builder using its own ctx is not reported',
+      () async {
+        final errors = await _runRule('''
 void open(BuildContext context) {
   showTimePicker(
     context: context,
@@ -89,8 +100,9 @@ void open(BuildContext context) {
   );
 }
 ''');
-      expect(_codes(errors), isEmpty);
-    });
+        expect(_codes(errors), isEmpty);
+      },
+    );
 
     // ── False positives the textual version produced (must stay clean) ──────
     test('FP: controller owned by State field is not reported', () async {
@@ -115,9 +127,10 @@ class MyState extends State<StatefulWidget> {
       expect(_codes(errors), isEmpty);
     });
 
-    test('FP: builder using its own context parameter is not reported',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'FP: builder using its own context parameter is not reported',
+      () async {
+        final errors = await _runRule('''
 void open(BuildContext context) {
   showDialog<void>(
     context: context,
@@ -126,12 +139,14 @@ void open(BuildContext context) {
   );
 }
 ''');
-      expect(_codes(errors), isEmpty);
-    });
+        expect(_codes(errors), isEmpty);
+      },
+    );
 
-    test('FP: ordinary build(context) with Theme.of(context) is not reported',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'FP: ordinary build(context) with Theme.of(context) is not reported',
+      () async {
+        final errors = await _runRule('''
 class Card extends StatelessWidget {
   const Card({super.key});
 
@@ -150,12 +165,14 @@ void open(BuildContext context) {
   );
 }
 ''');
-      expect(_codes(errors), isEmpty);
-    });
+        expect(_codes(errors), isEmpty);
+      },
+    );
 
-    test('FP: nested Builder using its own inner context is not reported',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'FP: nested Builder using its own inner context is not reported',
+      () async {
+        final errors = await _runRule('''
 void open(BuildContext context) {
   showDialog<void>(
     context: context,
@@ -166,12 +183,14 @@ void open(BuildContext context) {
   );
 }
 ''');
-      expect(_codes(errors), isEmpty);
-    });
+        expect(_codes(errors), isEmpty);
+      },
+    );
 
-    test('FP: controller declared inside the builder closure is not reported',
-        () async {
-      final errors = await _runRule('''
+    test(
+      'FP: controller declared inside the builder closure is not reported',
+      () async {
+        final errors = await _runRule('''
 void open(BuildContext context) {
   showDialog<void>(
     context: context,
@@ -182,37 +201,22 @@ void open(BuildContext context) {
   );
 }
 ''');
-      expect(_codes(errors), isEmpty);
-    });
+        expect(_codes(errors), isEmpty);
+      },
+    );
   });
 }
 
 List<String> _codes(List<Diagnostic> errors) =>
-    errors.map((Diagnostic e) => e.diagnosticCode.name).toList();
+    errors.map((Diagnostic e) => e.diagnosticCode.lowerCaseName).toList();
 
-Future<List<Diagnostic>> _runRule(String source) async {
-  final tempDir = await Directory.systemTemp.createTemp('overlay_lifecycle_');
-  try {
-    final pubspec = File('${tempDir.path}/pubspec.yaml');
-    await pubspec.writeAsString('''
-name: lint_test_project
-environment:
-  sdk: ">=3.8.0 <4.0.0"
-''');
-
-    final file = File(
-      '${tempDir.path}/lib/presentation/screens/test_overlay.dart',
-    );
-    await file.parent.create(recursive: true);
-    await file.writeAsString('$_fixturePrelude\n$source');
-
-    final errors = await const OverlayLifecycleContextSafetyLint()
-        .testAnalyzeAndRun(file);
-    return errors.cast<Diagnostic>();
-  } finally {
-    await tempDir.delete(recursive: true);
-  }
-}
+Future<List<Diagnostic>> _runRule(String source) => runRule(
+  OverlayLifecycleContextSafetyLint(),
+  '$_fixturePrelude\n$source',
+  path: 'lib/presentation/screens/test_overlay.dart',
+  packageName: 'lint_test_project',
+  mustResolve: false,
+);
 
 const String _fixturePrelude = r'''
 class Key {}

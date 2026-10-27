@@ -1,37 +1,28 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 import 'package:dart_architecture_lints/timezone_safety_utils.dart';
 
 class NoCivilUtcMixWithoutHelperLint extends GeneratedSkippingDartLintRule {
-  const NoCivilUtcMixWithoutHelperLint({
+  NoCivilUtcMixWithoutHelperLint({
     this.config = const NoCivilUtcMixWithoutHelperConfig(),
   }) : super(code: _code);
 
   final NoCivilUtcMixWithoutHelperConfig config;
 
   static const _code = LintCode(
-    name: 'no_civil_utc_mix_without_helper',
-    problemMessage:
-        'Detected civil-date + UTC-instant mix without approved helper.',
-    correctionMessage:
-        'Normalize with an approved helper (for example, TimeContract.normalizeCivilDate) before comparing, formatting, or concatenating.',
+    'no_civil_utc_mix_without_helper',
+    'Detected civil-date + UTC-instant mix without approved helper.',
+    correctionMessage: 'Normalize with an approved helper (for example, TimeContract.normalizeCivilDate) before comparing, formatting, or concatenating.',
   );
-
-  static NoCivilUtcMixWithoutHelperLint fromConfigs(CustomLintConfigs configs) {
-    final options = readRuleOptions(configs, _code.name);
-    return NoCivilUtcMixWithoutHelperLint(
-      config: NoCivilUtcMixWithoutHelperConfig.fromJson(options),
-    );
-  }
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     final path = normalizeLintPath(resolver.path);
     if (!config.matchesPath(path)) return;
@@ -45,8 +36,9 @@ class NoCivilUtcMixWithoutHelperLint extends GeneratedSkippingDartLintRule {
 
       final shouldReport = switch (node) {
         BinaryExpression binary => _shouldReportBinary(binary),
-        StringInterpolation interpolation =>
-          _shouldReportInterpolation(interpolation),
+        StringInterpolation interpolation => _shouldReportInterpolation(
+          interpolation,
+        ),
         MethodInvocation invocation => _shouldReportInvocation(invocation),
         _ => false,
       };
@@ -96,8 +88,9 @@ class NoCivilUtcMixWithoutHelperLint extends GeneratedSkippingDartLintRule {
         ? _TimeSignal.empty()
         : _TimeSignalCollector.collect(node.target!);
     final argumentSignals = node.argumentList.arguments
-        .map((argument) =>
-            _TimeSignalCollector.collect(_unwrapArgument(argument)))
+        .map(
+          (argument) => _TimeSignalCollector.collect(_unwrapArgument(argument)),
+        )
         .toList();
 
     final hasCivil =
@@ -137,24 +130,16 @@ class NoCivilUtcMixWithoutHelperLint extends GeneratedSkippingDartLintRule {
     return false;
   }
 
-  Expression _unwrapArgument(Expression expression) {
-    if (expression is NamedExpression) return expression.expression;
-    return expression;
+  Expression _unwrapArgument(Argument expression) {
+    // A named argument unwraps to its value; a positional one is itself.
+    return expression.argumentExpression;
   }
 
   bool _isRiskyBinaryOperator(String operator) {
     return _riskyBinaryOperators.contains(operator);
   }
 
-  static const _riskyBinaryOperators = {
-    '+',
-    '==',
-    '!=',
-    '>',
-    '<',
-    '>=',
-    '<=',
-  };
+  static const _riskyBinaryOperators = {'+', '==', '!=', '>', '<', '>=', '<='};
 
   static const _riskyInvocationMethods = {
     'compareTo',
@@ -175,23 +160,6 @@ class NoCivilUtcMixWithoutHelperConfig {
     this.excludeGlobs = _defaultExcludes,
     this.strictMode = false,
   });
-
-  factory NoCivilUtcMixWithoutHelperConfig.fromJson(Map<String, Object?> json) {
-    return NoCivilUtcMixWithoutHelperConfig(
-      helperWhitelist: readStringListOption(json, 'helper_whitelist'),
-      includeGlobs: readStringListOption(
-        json,
-        'include_globs',
-        fallback: _defaultIncludes,
-      ),
-      excludeGlobs: readStringListOption(
-        json,
-        'exclude_globs',
-        fallback: _defaultExcludes,
-      ),
-      strictMode: readBoolOption(json, 'strict_mode', fallback: false),
-    );
-  }
 
   static const _defaultIncludes = [
     '**/mappers/**',
@@ -243,11 +211,7 @@ class NoCivilUtcMixWithoutHelperConfig {
 
     final source = target.toSource();
     final compactSource = source.replaceAll(' ', '');
-    return [
-      methodName,
-      '$source.$methodName',
-      '$compactSource.$methodName',
-    ];
+    return [methodName, '$source.$methodName', '$compactSource.$methodName'];
   }
 }
 
@@ -264,7 +228,8 @@ class _TimeSignalCollector extends RecursiveAstVisitor<void> {
 
   static final _dateOnlyPattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
   static final _isoInstantPattern = RegExp(
-      r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})$');
+    r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})$',
+  );
 
   static const _instantMethodSignals = {
     'toUtc',
@@ -358,22 +323,25 @@ class _TimeSignalCollector extends RecursiveAstVisitor<void> {
       return;
     }
 
-    final positional =
-        node.argumentList.arguments.whereType<Expression>().where((arg) {
-      return arg is! NamedExpression;
-    }).length;
+    final positional = node.argumentList.arguments
+        .whereType<Expression>()
+        .where((arg) {
+          return arg is! NamedArgument;
+        })
+        .length;
 
-    final hasClockParts =
-        node.argumentList.arguments.whereType<NamedExpression>().any((named) {
-      const clockParts = {
-        'hour',
-        'minute',
-        'second',
-        'millisecond',
-        'microsecond'
-      };
-      return clockParts.contains(named.name.label.name);
-    });
+    final hasClockParts = node.argumentList.arguments
+        .whereType<NamedArgument>()
+        .any((named) {
+          const clockParts = {
+            'hour',
+            'minute',
+            'second',
+            'millisecond',
+            'microsecond',
+          };
+          return clockParts.contains(named.name.lexeme);
+        });
 
     if (constructor == null && positional <= 3 && !hasClockParts) {
       _signal.hasCivil = true;
@@ -428,11 +396,9 @@ class _TimeSignalCollector extends RecursiveAstVisitor<void> {
     return _TimeSignal.empty();
   }
 
-  Expression _unwrapArgument(Expression expression) {
-    if (expression is NamedExpression) {
-      return expression.expression;
-    }
-    return expression;
+  Expression _unwrapArgument(Argument expression) {
+    // A named argument unwraps to its value; a positional one is itself.
+    return expression.argumentExpression;
   }
 
   Set<String> _splitWords(String value) {
@@ -450,14 +416,9 @@ class _TimeSignalCollector extends RecursiveAstVisitor<void> {
 }
 
 class _TimeSignal {
-  _TimeSignal({
-    this.hasCivil = false,
-    this.hasInstant = false,
-  });
+  _TimeSignal({this.hasCivil = false, this.hasInstant = false});
 
-  _TimeSignal.empty()
-      : hasCivil = false,
-        hasInstant = false;
+  _TimeSignal.empty() : hasCivil = false, hasInstant = false;
 
   bool hasCivil;
   bool hasInstant;

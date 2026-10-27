@@ -1,5 +1,3 @@
-import 'package:custom_lint_builder/custom_lint_builder.dart';
-
 String normalizeLintPath(String path) => path.replaceAll('\\', '/');
 
 bool matchesAnyGlob(String filePath, List<String> globs) {
@@ -49,42 +47,6 @@ RegExp _globToRegExp(String glob) {
 }
 
 const _regexSpecialChars = r'.^$+()[]{}|';
-
-List<String> readStringListOption(
-  Map<String, Object?> json,
-  String key, {
-  List<String> fallback = const [],
-}) {
-  final raw = json[key];
-  if (raw is List) {
-    return raw.whereType<String>().map((item) => item.trim()).where((item) {
-      return item.isNotEmpty;
-    }).toList();
-  }
-
-  if (raw is String && raw.trim().isNotEmpty) {
-    return [raw.trim()];
-  }
-
-  return fallback;
-}
-
-bool readBoolOption(
-  Map<String, Object?> json,
-  String key, {
-  required bool fallback,
-}) {
-  final raw = json[key];
-  if (raw is bool) return raw;
-  return fallback;
-}
-
-Map<String, Object?> readRuleOptions(
-  CustomLintConfigs configs,
-  String ruleName,
-) {
-  return configs.rules[ruleName]?.json ?? const <String, Object?>{};
-}
 
 bool wildcardMatch(String value, String pattern) {
   final escaped = RegExp.escape(pattern).replaceAll(r'\*', '.*');

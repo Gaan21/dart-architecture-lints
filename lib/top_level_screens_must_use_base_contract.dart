@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that enforces top-level/routable Screen widgets to extend
@@ -37,7 +37,7 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 ///   AccountInactiveScreen (account-wall: full-block gate, no base AppBar)
 class TopLevelScreensMustUseBaseContract extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [TopLevelScreensMustUseBaseContract].
-  const TopLevelScreensMustUseBaseContract() : super(code: _code);
+  TopLevelScreensMustUseBaseContract() : super(code: _code);
 
   static const _exceptions = {
     'SplashScreen',
@@ -55,9 +55,8 @@ class TopLevelScreensMustUseBaseContract extends GeneratedSkippingDartLintRule {
   static final Map<String, Map<String, bool>> _screenExtensionCache = {};
 
   static const _code = LintCode(
-    name: 'top_level_screens_must_use_base_contract',
-    problemMessage:
-        'Las pantallas enrutadas de nivel superior deben extender un contrato '
+    'top_level_screens_must_use_base_contract',
+    'Las pantallas enrutadas de nivel superior deben extender un contrato '
         'base (Base*Screen) de screens/base/ para garantizar comportamiento '
         'consistente (analytics, theming, lifecycle hooks).',
     correctionMessage:
@@ -82,12 +81,11 @@ class TopLevelScreensMustUseBaseContract extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final projectRoot =
-        _projectRoot(_normalizePath(resolver.source.uri.path));
+    final projectRoot = _projectRoot(_normalizePath(resolver.uri.path));
     if (projectRoot == null) return;
 
     // Rule is inactive when the project has no screens/base/ contracts.
@@ -275,8 +273,8 @@ class _ShellBranchFinder extends RecursiveAstVisitor<void> {
 
   void _processShellBranch(InstanceCreationExpression node) {
     for (final arg in node.argumentList.arguments) {
-      if (arg is NamedExpression && arg.name.label.name == 'routes') {
-        _collectFrom(arg.expression);
+      if (arg is NamedArgument && arg.name.lexeme == 'routes') {
+        _collectFrom(arg.argumentExpression);
       }
     }
   }
@@ -368,10 +366,10 @@ class _RouteCheckerVisitor extends RecursiveAstVisitor<void> {
   /// Returns the expression value of the `builder` or `pageBuilder` named arg.
   Expression? _findBuilderArg(InstanceCreationExpression node) {
     for (final arg in node.argumentList.arguments) {
-      if (arg is NamedExpression) {
-        final label = arg.name.label.name;
+      if (arg is NamedArgument) {
+        final label = arg.name.lexeme;
         if (label == 'builder' || label == 'pageBuilder') {
-          return arg.expression;
+          return arg.argumentExpression;
         }
       }
     }

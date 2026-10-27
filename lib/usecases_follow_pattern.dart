@@ -1,16 +1,18 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
-/// A lint rule that enforces UseCase pattern with public execute() method returning Result<T>.
+/// A lint rule that enforces UseCase pattern with public execute() method returning `Result<T>`.
 /// Ensures consistency in Clean Architecture UseCase contracts.
 class UseCasesFollowPatternLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [UseCasesFollowPatternLint].
-  const UseCasesFollowPatternLint() : super(code: _code);
+  UseCasesFollowPatternLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'usecases_follow_pattern',
+    'UseCase sin método execute() requerido. Los UseCases de Clean Architecture deben tener una interfaz consistente para ejecución.',
     correctionMessage:
         'Añade método execute() público que retorne Result<T> o Future<Result<T>>.\n'
         'Ejemplo:\n'
@@ -18,16 +20,13 @@ class UseCasesFollowPatternLint extends GeneratedSkippingDartLintRule {
         '  Future<Result<User>> execute(GetUserParams params) async {\n'
         '    return await repository.getUser(params.id);\n'
         '  }',
-    name: 'usecases_follow_pattern',
-    problemMessage:
-        'UseCase sin método execute() requerido. Los UseCases de Clean Architecture deben tener una interfaz consistente para ejecución.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addClassDeclaration((ClassDeclaration node) {
       // Only check classes that end with "UseCase"
@@ -45,12 +44,12 @@ class UseCasesFollowPatternLint extends GeneratedSkippingDartLintRule {
 
   /// Checks if a class is a UseCase class (ends with "UseCase").
   bool _isUseCaseClass(ClassDeclaration classDecl) {
-    return classDecl.name.lexeme.endsWith('UseCase');
+    return classDecl.namePart.typeName.lexeme.endsWith('UseCase');
   }
 
   /// Checks if the class has a valid public execute() method.
   bool _hasValidExecuteMethod(ClassDeclaration classDecl) {
-    for (final member in classDecl.members) {
+    for (final member in classDecl.body.members) {
       if (member is MethodDeclaration) {
         // Check if it's a public execute method
         if (_isPublicExecuteMethod(member)) {
@@ -76,7 +75,7 @@ class UseCasesFollowPatternLint extends GeneratedSkippingDartLintRule {
     return true;
   }
 
-  /// Checks if the method has a valid return type (Result<T> or Future<Result<T>>).
+  /// Checks if the method has a valid return type (`Result<T>` or `Future<Result<T>>`).
   bool _hasValidReturnType(MethodDeclaration method) {
     final returnType = method.returnType;
     if (returnType == null) return false;
@@ -100,8 +99,9 @@ class UseCasesFollowPatternLint extends GeneratedSkippingDartLintRule {
       // Handle generic types
       final typeArgs = typeAnnotation.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
-        final argNames =
-            typeArgs.arguments.map((arg) => _getTypeName(arg)).join(', ');
+        final argNames = typeArgs.arguments
+            .map((arg) => _getTypeName(arg))
+            .join(', ');
         return '$name<$argNames>';
       }
 

@@ -1,10 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:analyzer/error/error.dart';
+import 'package:analyzer/diagnostic/diagnostic.dart';
 import 'package:dart_architecture_lints/datasources_return_result.dart';
 import 'package:dart_architecture_lints/no_result_throw.dart';
 import 'package:dart_architecture_lints/repository_methods_return_result.dart';
 import 'package:test/test.dart';
+
 import 'rule_test_support.dart';
 
 const _result = '''
@@ -14,7 +15,7 @@ typedef AsyncResult<T> = Future<Result<T>>;
 ''';
 
 /// Names of the reported members (method or getter) or throwing members.
-Set<String> _reported(List<AnalysisError> errors, String source) {
+Set<String> _reported(List<Diagnostic> errors, String source) {
   final names = <String>{};
   for (final error in errors) {
     final text = source.substring(error.offset, error.offset + error.length);
@@ -54,7 +55,7 @@ class RecordRepositoryImpl implements RecordContract {
 
     test('public operations need Result; getters/helpers may not', () async {
       final errors = await runRule(
-        const RepositoryMethodsReturnResult(),
+        RepositoryMethodsReturnResult(),
         source,
         path: 'lib/data/repositories/record_repository.dart',
       );
@@ -71,7 +72,7 @@ class RecordRepositoryImpl implements RecordContract {
     test('files outside data/repositories are out of scope', () async {
       expect(
         await runRule(
-          const RepositoryMethodsReturnResult(),
+          RepositoryMethodsReturnResult(),
           source,
           path: 'lib/domain/repositories/record_repository.dart',
         ),
@@ -99,7 +100,7 @@ abstract interface class RecordDataSource {
 }
 ''';
       final errors = await runRule(
-        const DataSourcesReturnResult(),
+        DataSourcesReturnResult(),
         source,
         path: 'lib/data/dataSources/remote/record_data_source.dart',
       );
@@ -152,7 +153,7 @@ class RecordRepository {
   int helperUse() => _helper();
 }
 ''';
-    final errors = await runRule(const NoResultThrowLint(), source);
+    final errors = await runRule(NoResultThrowLint(), source);
     expect(errors, hasLength(5));
     final lines = {
       for (final error in errors)

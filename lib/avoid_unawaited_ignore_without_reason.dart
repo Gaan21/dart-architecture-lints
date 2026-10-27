@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Secondary lint rule that detects `// ignore: <rule>` comments targeting
@@ -14,10 +14,14 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 ///   - `avoid_async_wrapper_hides_unawaited`
 ///
 /// This ensures that even when a rule is suppressed via `// ignore:`, the
-/// developer must provide a reason for the suppression.
+/// developer must provide a reason for the suppression. A rule may be named
+/// bare (`avoid_unawaited`) or with the plugin prefix that the analyzer
+/// requires to suppress it (`dart_architecture_lints/avoid_unawaited`).
 class AvoidUnawaitedIgnoreWithoutReasonLint
     extends GeneratedSkippingDartLintRule {
-  const AvoidUnawaitedIgnoreWithoutReasonLint() : super(code: _code);
+  AvoidUnawaitedIgnoreWithoutReasonLint() : super(code: _code);
+
+  static const _pluginPrefix = 'dart_architecture_lints/';
 
   /// The set of rule names that require an `// ignore-reason:` when ignored.
   static const _targetedRules = {
@@ -27,9 +31,8 @@ class AvoidUnawaitedIgnoreWithoutReasonLint
   };
 
   static const _code = LintCode(
-    name: 'avoid_unawaited_ignore_without_reason',
-    problemMessage:
-        '`// ignore: <regla-unawaited>` sin justificación. '
+    'avoid_unawaited_ignore_without_reason',
+    '`// ignore: <regla-unawaited>` sin justificación. '
         'Si necesitas suprimir la regla, añade `// ignore-reason: <motivo>` '
         'en la misma línea o la línea anterior explicando por qué es seguro '
         'ignorar el aviso.',
@@ -45,9 +48,9 @@ class AvoidUnawaitedIgnoreWithoutReasonLint
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addCompilationUnit((CompilationUnit unit) {
       final lineInfo = unit.lineInfo;
@@ -61,11 +64,13 @@ class AvoidUnawaitedIgnoreWithoutReasonLint
           final text = comment.lexeme.trim();
           if (_isTargetedIgnore(text)) {
             final line = lineInfo.getLocation(comment.offset).lineNumber;
-            ignoreComments.add(_IgnoreComment(
-              line: line,
-              offset: comment.offset,
-              length: comment.length,
-            ));
+            ignoreComments.add(
+              _IgnoreComment(
+                line: line,
+                offset: comment.offset,
+                length: comment.length,
+              ),
+            );
           }
           comment = comment.next;
         }
@@ -86,7 +91,7 @@ class AvoidUnawaitedIgnoreWithoutReasonLint
   }
 
   /// Returns true if the comment text is `// ignore: <rules>` where at least
-  /// one of [_targetedRules] appears in the rule list.
+  /// one of [_targetedRules] appears in the rule list, bare or prefixed.
   bool _isTargetedIgnore(String text) {
     if (!text.startsWith('//')) return false;
     final content = text.substring(2).trim();
@@ -94,7 +99,15 @@ class AvoidUnawaitedIgnoreWithoutReasonLint
     if (!content.startsWith('ignore:')) return false;
 
     final rules = content.substring('ignore:'.length).trim();
-    final ruleList = rules.split(',').map((r) => r.trim()).toSet();
+    final ruleList = rules
+        .split(',')
+        .map((r) => r.trim())
+        .map(
+          (r) => r.startsWith(_pluginPrefix)
+              ? r.substring(_pluginPrefix.length)
+              : r,
+        )
+        .toSet();
     return ruleList.intersection(_targetedRules).isNotEmpty;
   }
 

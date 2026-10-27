@@ -1,28 +1,26 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that prevents direct internet calls outside of NetworkService.
 /// Enforces centralized network management for better connectivity handling.
 class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoDirectInternetCallsLint].
-  const NoDirectInternetCallsLint() : super(code: _code);
+  NoDirectInternetCallsLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    correctionMessage:
-        'Route this network call through a NetworkService or similar abstraction to centralize connectivity management, error handling, and offline support.',
-    name: 'no_direct_internet_calls',
-    problemMessage:
-        'Direct network calls bypass centralized connectivity management. This makes offline handling and network error management inconsistent.',
+    'no_direct_internet_calls',
+    'Direct network calls bypass centralized connectivity management. This makes offline handling and network error management inconsistent.',
+    correctionMessage: 'Route this network call through a NetworkService or similar abstraction to centralize connectivity management, error handling, and offline support.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     final filePath = resolver.path;
 
@@ -33,8 +31,9 @@ class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
       _checkDirectInternetCall(node, reporter);
     });
 
-    context.registry
-        .addInstanceCreationExpression((InstanceCreationExpression node) {
+    context.registry.addInstanceCreationExpression((
+      InstanceCreationExpression node,
+    ) {
       _checkNetworkInstanceCreation(node, reporter);
     });
   }
@@ -75,7 +74,9 @@ class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
 
   /// Checks for direct internet method calls.
   void _checkDirectInternetCall(
-      MethodInvocation node, DiagnosticReporter reporter) {
+    MethodInvocation node,
+    DiagnosticReporter reporter,
+  ) {
     final invocationTarget = node.realTarget ?? node.target;
 
     // Allow delegated calls through variables like networkService / NetworkService.
@@ -90,11 +91,9 @@ class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
     // Check for connectivity checks
     if (_isConnectivityCall(node)) {
       const customCode = LintCode(
-        name: 'no_direct_internet_calls',
-        problemMessage:
-            'Direct connectivity checks should go through NetworkService for consistent offline handling.',
-        correctionMessage:
-            'Use NetworkService.hasConnection() instead of direct connectivity checks',
+        'no_direct_internet_calls',
+        'Direct connectivity checks should go through NetworkService for consistent offline handling.',
+        correctionMessage: 'Use NetworkService.hasConnection() instead of direct connectivity checks',
       );
       reporter.atNode(node, customCode);
       return;
@@ -103,7 +102,9 @@ class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
 
   /// Checks for network-related instance creation.
   void _checkNetworkInstanceCreation(
-      InstanceCreationExpression node, DiagnosticReporter reporter) {
+    InstanceCreationExpression node,
+    DiagnosticReporter reporter,
+  ) {
     // Check for Dio() instances
     if (_isDioCreation(node)) {
       reporter.atNode(node, _code);
@@ -119,11 +120,9 @@ class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
     // Check for Connectivity() instances
     if (_isConnectivityCreation(node)) {
       const customCode = LintCode(
-        name: 'no_direct_internet_calls',
-        problemMessage:
-            'Direct Connectivity instances should be managed by NetworkService for centralized handling.',
-        correctionMessage:
-            'Use NetworkService.hasConnection() instead of creating Connectivity instances',
+        'no_direct_internet_calls',
+        'Direct Connectivity instances should be managed by NetworkService for centralized handling.',
+        correctionMessage: 'Use NetworkService.hasConnection() instead of creating Connectivity instances',
       );
       reporter.atNode(node, customCode);
       return;
@@ -135,9 +134,9 @@ class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
     if (target == null) return false;
 
     final normalizedTarget = target.toSource().toLowerCase().replaceAll(
-          RegExp(r'[^a-z0-9]'),
-          '',
-        );
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
 
     return normalizedTarget.contains('networkservice');
   }
@@ -152,7 +151,7 @@ class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
       'delete',
       'patch',
       'head',
-      'options'
+      'options',
     };
 
     if (!httpMethods.contains(methodName)) return false;
@@ -210,11 +209,7 @@ class NoDirectInternetCallsLint extends GeneratedSkippingDartLintRule {
     }
 
     // Check for specific HTTP client types
-    final httpClientTypes = {
-      'HttpClient',
-      'IOClient',
-      'BrowserClient',
-    };
+    final httpClientTypes = {'HttpClient', 'IOClient', 'BrowserClient'};
 
     return httpClientTypes.contains(constructorName.type.name.lexeme);
   }

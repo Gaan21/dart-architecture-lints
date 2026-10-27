@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Generator-independent, shallow immutability check for domain entities and
@@ -14,12 +14,11 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// objects or collections: this check does not prove deep immutability.
 class DomainValuesShallowImmutable extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [DomainValuesShallowImmutable].
-  const DomainValuesShallowImmutable() : super(code: _code);
+  DomainValuesShallowImmutable() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'domain_values_shallow_immutable',
-    problemMessage:
-        'Domain entities and value objects must not declare mutable instance '
+    'domain_values_shallow_immutable',
+    'Domain entities and value objects must not declare mutable instance '
         'fields or public setters.',
     correctionMessage:
         'Make the field final (or `late final` with an initializer), remove the '
@@ -29,21 +28,21 @@ class DomainValuesShallowImmutable extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final path = resolver.source.uri.path;
+    final path = resolver.uri.path;
     if (!path.contains('/domain/entities/') &&
         !path.contains('/domain/value_objects/')) {
       return;
     }
     context.registry.addClassDeclaration((node) {
       if (_usesFreezed(node.metadata)) return;
-      _checkMembers(node.members, reporter);
+      _checkMembers(node.body.members, reporter);
     });
     context.registry.addMixinDeclaration(
-      (node) => _checkMembers(node.members, reporter),
+      (node) => _checkMembers(node.body.members, reporter),
     );
   }
 

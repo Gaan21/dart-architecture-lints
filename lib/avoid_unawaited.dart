@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// Lint rule that detects `unawaited(...)` calls without a structured justification
@@ -14,7 +14,7 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// The method passed to unawaited MUST be NO-THROW (try/catch + central logging
 /// internally) since errors inside fire-and-forget Futures are otherwise lost.
 class AvoidUnawaitedLint extends GeneratedSkippingDartLintRule {
-  const AvoidUnawaitedLint() : super(code: _codeNoJustification);
+  AvoidUnawaitedLint() : super(code: _codeNoJustification);
 
   static const _validCategories = {
     'dispose-sync',
@@ -26,12 +26,12 @@ class AvoidUnawaitedLint extends GeneratedSkippingDartLintRule {
   };
 
   // Two codes share the same rule name so both are suppressed by
-  // `// ignore: avoid_unawaited` and controlled via analysis_options.
+  // `// ignore: dart_architecture_lints/avoid_unawaited` and controlled under
+  // `plugins: dart_architecture_lints: diagnostics:` in analysis_options.
 
   static const _codeNoJustification = LintCode(
-    name: 'avoid_unawaited',
-    problemMessage:
-        'Uso de `unawaited(...)` sin justificación. '
+    'avoid_unawaited',
+    'Uso de `unawaited(...)` sin justificación. '
         'Formato requerido: `// unawaited-ok: <categoría> - <motivo>`.',
     correctionMessage:
         'Opciones: (1) usa `async`/`await` si el resultado afecta estado/UI; '
@@ -47,9 +47,8 @@ class AvoidUnawaitedLint extends GeneratedSkippingDartLintRule {
   );
 
   static const _codeInvalidCategory = LintCode(
-    name: 'avoid_unawaited',
-    problemMessage:
-        'Categoría en `// unawaited-ok:` inválida o formato incorrecto. '
+    'avoid_unawaited',
+    'Categoría en `// unawaited-ok:` inválida o formato incorrecto. '
         'Formato requerido: `// unawaited-ok: <categoría> - <motivo>`.',
     correctionMessage:
         'Usa una categoría válida: '
@@ -61,9 +60,9 @@ class AvoidUnawaitedLint extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addMethodInvocation((MethodInvocation node) {
       _checkMethodInvocation(node, reporter);

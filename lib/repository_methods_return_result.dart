@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 import 'package:dart_architecture_lints/result_return_types.dart';
 
@@ -9,10 +9,12 @@ import 'package:dart_architecture_lints/result_return_types.dart';
 /// return values directly; this is a signature check, not a proof of semantics.
 class RepositoryMethodsReturnResult extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [RepositoryMethodsReturnResult].
-  const RepositoryMethodsReturnResult() : super(code: _code);
+  RepositoryMethodsReturnResult() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
+    'repository_methods_return_result',
+    'Los métodos de Repository deben retornar Future<Result<T>> o Result<T> para manejo de errores consistente.',
     correctionMessage:
         'Cambia el tipo de retorno a Future<Result<TipoRetorno>> y envuelve resultados exitosos con Success() o errores con Failure().\n'
         'Ejemplo:\n'
@@ -27,19 +29,16 @@ class RepositoryMethodsReturnResult extends GeneratedSkippingDartLintRule {
         '      }\n'
         '    }\n'
         '  }',
-    name: 'repository_methods_return_result',
-    problemMessage:
-        'Los métodos de Repository deben retornar Future<Result<T>> o Result<T> para manejo de errores consistente.',
   );
 
   /// Executes the lint rule to detect Repository methods that do not return `Result`.
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
-    final uri = resolver.source.uri;
+    final uri = resolver.uri;
     final path = uri.path;
 
     // Solo aplicar en data/repositories/ (incluyendo subcarpetas)
@@ -48,7 +47,7 @@ class RepositoryMethodsReturnResult extends GeneratedSkippingDartLintRule {
     }
 
     context.registry.addClassDeclaration((ClassDeclaration node) {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
 
       // Solo verificar clases que terminan en "Repository" o "RepositoryImpl"
       if (!className.endsWith('Repository') &&
@@ -57,7 +56,7 @@ class RepositoryMethodsReturnResult extends GeneratedSkippingDartLintRule {
       }
 
       // Verificar métodos públicos de la clase
-      for (final member in node.members) {
+      for (final member in node.body.members) {
         if (member is MethodDeclaration) {
           _checkMethod(member, reporter);
         }

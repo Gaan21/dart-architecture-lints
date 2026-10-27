@@ -1,37 +1,29 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+
 import 'time_scope.dart';
-import 'timezone_safety_utils.dart';
 
 /// A lint rule that discourages direct use of DateTime constructors that create local time.
 /// Enforces UTC-first approach and dependency injection for testability.
 class NoDateTimeNowLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoDateTimeNowLint].
-  const NoDateTimeNowLint({this.scope = const TimeScope()})
-    : super(code: _code);
+  NoDateTimeNowLint({this.scope = const TimeScope()}) : super(code: _code);
   final TimeScope scope;
-
-  static NoDateTimeNowLint fromConfigs(CustomLintConfigs configs) =>
-      NoDateTimeNowLint(
-        scope: TimeScope.fromJson(readRuleOptions(configs, _code.name)),
-      );
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    name: 'no_local_datetime_constructors',
-    problemMessage:
-        'DateTime constructor creates local time which causes timezone inconsistencies. Use UTC constructors or inject Clock for testability.',
-    correctionMessage:
-        'Use DateTime.utc(), DateTime.parse() with Z suffix, DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true), or inject Clock dependency for current time.',
+    'no_local_datetime_constructors',
+    'DateTime constructor creates local time which causes timezone inconsistencies. Use UTC constructors or inject Clock for testability.',
+    correctionMessage: 'Use DateTime.utc(), DateTime.parse() with Z suffix, DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true), or inject Clock dependency for current time.',
   );
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     if (!scope.includes(resolver.path)) return;
     // Check InstanceCreationExpression for problematic DateTime constructors
@@ -126,8 +118,8 @@ class NoDateTimeNowLint extends GeneratedSkippingDartLintRule {
     final arguments = node.argumentList.arguments;
 
     for (final argument in arguments) {
-      if (argument is NamedExpression && argument.name.label.name == 'isUtc') {
-        final expression = argument.expression;
+      if (argument is NamedArgument && argument.name.lexeme == 'isUtc') {
+        final expression = argument.argumentExpression;
         if (expression is BooleanLiteral && expression.value) {
           return true;
         }

@@ -8,7 +8,7 @@
 
 ## What it detects
 
-Import directives whose URI is `package:<package>/domain/entities.dart` or starts with `package:<package>/domain/entities/`, where `<package>` is the analyzed package (or `project_package_name`), in files matching `include_globs` and not `allowed_file_globs`.
+Import directives whose URI is `package:<package>/domain/entities.dart` or starts with `package:<package>/domain/entities/`, where `<package>` is the analyzed package, in files matching the include globs and not the allowed files.
 
 ## Why
 
@@ -32,9 +32,9 @@ Your UI uses domain entities directly by design.
 
 ## Options
 
-Sibling keys: `project_package_name` (default: the analyzed package's own name, taken from the library's `package:` URI or else the project's `pubspec.yaml`; set it to check another package name), `include_globs` (default `**/lib/presentation/screens/**`, `**/lib/presentation/widgets/**`) and `allowed_file_globs` (default `**/lib/presentation/**/*_ui_mapper.dart`).
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): the package name is the `name` in the nearest `pubspec.yaml` above the file; include globs `**/lib/presentation/screens/**`, `**/lib/presentation/widgets/**`; allowed files `**/lib/presentation/**/*_ui_mapper.dart`.
 
 ## Limits
 
-- Only `package:` imports with the configured name; relative imports, exports and transitive use are not detected.
-- Entities imported from another package (for example a shared domain package) are only checked when `project_package_name` names it.
+- Only `package:` imports with the analyzed package name; relative imports, exports and transitive use are not detected.
+- Entities imported from another package (for example a shared domain package) are not checked.

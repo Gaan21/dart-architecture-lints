@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that prevents raw exception messages from being passed through
@@ -22,7 +22,7 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// Scope: all layers (domain, data, presentation).
 class NoExceptionMessagePassthrough extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoExceptionMessagePassthrough].
-  const NoExceptionMessagePassthrough() : super(code: _code);
+  NoExceptionMessagePassthrough() : super(code: _code);
 
   /// Named parameter names that suggest user-visible message forwarding.
   static const _messageArgNames = {
@@ -51,9 +51,8 @@ class NoExceptionMessagePassthrough extends GeneratedSkippingDartLintRule {
   };
 
   static const _code = LintCode(
-    name: 'no_exception_message_passthrough',
-    problemMessage:
-        'Se está reenviando un mensaje crudo de excepción hacia la UI. '
+    'no_exception_message_passthrough',
+    'Se está reenviando un mensaje crudo de excepción hacia la UI. '
         'Los mensajes de error al usuario deben usar códigos i18n estables, '
         'no strings de excepción que pueden cambiar y exponer detalles internos.',
     correctionMessage:
@@ -70,12 +69,12 @@ class NoExceptionMessagePassthrough extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     // Exclude tests — assertion helpers often forward messages intentionally.
-    final path = resolver.source.uri.path;
+    final path = resolver.uri.path;
     if (path.contains('/test/') ||
         path.contains('/integration_test/') ||
         path.endsWith('_test.dart')) {
@@ -97,17 +96,18 @@ class NoExceptionMessagePassthrough extends GeneratedSkippingDartLintRule {
     // Pattern 2 & 3 and constructor passthrough.
     context.registry.addArgumentList((ArgumentList node) {
       final parent = node.parent;
-      final bool isExceptionCtor = parent is InstanceCreationExpression &&
+      final bool isExceptionCtor =
+          parent is InstanceCreationExpression &&
           _looksLikeExceptionCtor(parent);
 
       for (int i = 0; i < node.arguments.length; i++) {
         final arg = node.arguments[i];
 
-        if (arg is NamedExpression) {
-          final paramName = arg.name.label.name;
+        if (arg is NamedArgument) {
+          final paramName = arg.name.lexeme;
           if (!_messageArgNames.contains(paramName)) continue;
 
-          final value = arg.expression;
+          final value = arg.argumentExpression;
           if (_containsRawExceptionPayload(value) ||
               _isRawPayloadProperty(value) ||
               _isRawMessageVariable(value)) {
@@ -130,7 +130,7 @@ class NoExceptionMessagePassthrough extends GeneratedSkippingDartLintRule {
 
         // Positional message payload in exception constructors:
         // ExceptionType(<message>, ...)
-        if (isExceptionCtor && i == 0) {
+        if (isExceptionCtor && i == 0 && arg is Expression) {
           if (_containsRawExceptionPayload(arg) ||
               _isRawPayloadProperty(arg) ||
               _isRawMessageVariable(arg)) {

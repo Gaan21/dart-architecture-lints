@@ -1,8 +1,7 @@
-import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:dart_architecture_lints/domain_entities_must_use_freezed.dart';
 import 'package:dart_architecture_lints/domain_values_shallow_immutable.dart';
-import 'package:package_config/package_config.dart';
 import 'package:test/test.dart';
+
 import 'rule_test_support.dart';
 
 const _source = '''
@@ -29,7 +28,7 @@ abstract class Shape { abstract double area; }
 void main() {
   test('reports mutable fields, exposed late setters and setters', () async {
     final errors = await runRule(
-      const DomainValuesShallowImmutable(),
+      DomainValuesShallowImmutable(),
       _source,
       path: 'lib/domain/entities/record.dart',
     );
@@ -50,7 +49,7 @@ void main() {
     const value = 'class Email { Email(this.value); String value; }';
     expect(
       await runRule(
-        const DomainValuesShallowImmutable(),
+        DomainValuesShallowImmutable(),
         value,
         path: 'lib/domain/value_objects/email.dart',
       ),
@@ -58,7 +57,7 @@ void main() {
     );
     expect(
       await runRule(
-        const DomainValuesShallowImmutable(),
+        DomainValuesShallowImmutable(),
         _source,
         path: 'lib/data/models/record.dart',
       ),
@@ -77,19 +76,21 @@ class Money {
 ''';
     const path = 'lib/domain/value_objects/money.dart';
     expect(
-      await runRule(const DomainValuesShallowImmutable(), plain, path: path),
+      await runRule(DomainValuesShallowImmutable(), plain, path: path),
       isEmpty,
     );
     // The Freezed convention is independent; projects without Freezed disable it.
     expect(
-      await runRule(const DomainEntitiesMustUseFreezed(), plain, path: path),
+      await runRule(DomainEntitiesMustUseFreezed(), plain, path: path),
       hasLength(1),
     );
   });
 
   test('both immutability rules are enabled by default', () {
-    final empty = CustomLintConfigs.parse(null, PackageConfig([]));
-    expect(const DomainValuesShallowImmutable().isEnabled(empty), isTrue);
-    expect(const DomainEntitiesMustUseFreezed().isEnabled(empty), isTrue);
+    final enabled = {
+      for (final rule in pluginRegistry().enabled({})) rule.name,
+    };
+    expect(enabled, contains(DomainValuesShallowImmutable().name));
+    expect(enabled, contains(DomainEntitiesMustUseFreezed().name));
   });
 }

@@ -1,7 +1,8 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+
 import 'timezone_safety_utils.dart';
 
 /// Lint rule that validates log context against the enclosing symbol scope.
@@ -10,7 +11,7 @@ import 'timezone_safety_utils.dart';
 /// named `AppLoggerService`, `appLoggerService` or `*LoggerService`. Only literal
 /// `context:` values with a reliable enclosing member scope are checked.
 class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
-  const LoggerContextMatchesScopeLint({
+  LoggerContextMatchesScopeLint({
     this.includeGlobs = defaultIncludeGlobs,
     this.excludeGlobs = const [],
     this.loggerNames,
@@ -25,31 +26,9 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
   final List<String> includeGlobs, excludeGlobs, methods;
   final String contextArgument;
 
-  static LoggerContextMatchesScopeLint fromConfigs(CustomLintConfigs configs) {
-    final options = readRuleOptions(configs, _code.name);
-    return LoggerContextMatchesScopeLint(
-      includeGlobs: readStringListOption(
-        options,
-        'include_globs',
-        fallback: defaultIncludeGlobs,
-      ),
-      excludeGlobs: readStringListOption(options, 'exclude_globs'),
-      loggerNames: options.containsKey('logger_names')
-          ? readStringListOption(options, 'logger_names')
-          : null,
-      methods: readStringListOption(
-        options,
-        'methods',
-        fallback: const ['error', 'warning'],
-      ),
-      contextArgument: options['context_argument'] as String? ?? 'context',
-    );
-  }
-
   static const _code = LintCode(
-    name: 'logger_context_matches_scope',
-    problemMessage:
-        'El context del log no coincide con el scope real del símbolo envolvente.',
+    'logger_context_matches_scope',
+    'El context del log no coincide con el scope real del símbolo envolvente.',
     correctionMessage:
         'Usa context con formato "TypeName.memberCanonical", donde memberCanonical '
         'elimina prefijo "_" y sufijo "Internal" del nombre real del miembro.',
@@ -57,9 +36,9 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     if (matchesAnyGlob(resolver.path, excludeGlobs)) return;
     if (!matchesAnyGlob(resolver.path, includeGlobs)) return;
@@ -92,9 +71,8 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
     reporter.atNode(
       contextExpression,
       LintCode(
-        name: 'logger_context_matches_scope',
-        problemMessage:
-            'Context no coincide con el scope real: expected "$expectedContext", '
+        'logger_context_matches_scope',
+        'Context no coincide con el scope real: expected "$expectedContext", '
             'actual "$actualContext".',
         correctionMessage:
             'Actualiza context al scope canónico del símbolo envolvente: '
@@ -134,8 +112,8 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
 
   Expression? _findContextArgument(ArgumentList args) {
     for (final arg in args.arguments) {
-      if (arg is NamedExpression && arg.name.label.name == contextArgument) {
-        return arg.expression;
+      if (arg is NamedArgument && arg.name.lexeme == contextArgument) {
+        return arg.argumentExpression;
       }
     }
     return null;
@@ -176,9 +154,9 @@ class LoggerContextMatchesScopeLint extends GeneratedSkippingDartLintRule {
     AstNode? current = node.parent;
 
     while (current != null) {
-      if (current is ClassDeclaration) return current.name.lexeme;
+      if (current is ClassDeclaration) return current.namePart.typeName.lexeme;
       if (current is MixinDeclaration) return current.name.lexeme;
-      if (current is EnumDeclaration) return current.name.lexeme;
+      if (current is EnumDeclaration) return current.namePart.typeName.lexeme;
       if (current is ExtensionDeclaration) return current.name?.lexeme;
 
       current = current.parent;

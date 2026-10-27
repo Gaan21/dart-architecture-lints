@@ -1,4 +1,6 @@
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analysis_server_plugin/plugin.dart';
+import 'package:analysis_server_plugin/registry.dart';
+import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 import 'package:dart_architecture_lints/avoid_hardcoded_strings.dart';
 import 'package:dart_architecture_lints/enforce_final_variables.dart';
 import 'package:dart_architecture_lints/method_order_rule.dart';
@@ -52,79 +54,91 @@ import 'package:dart_architecture_lints/no_hardcoded_color_literal.dart';
 import 'package:dart_architecture_lints/no_hardcoded_border_radius.dart';
 import 'package:dart_architecture_lints/overlay_lifecycle_context_safety.dart';
 
-/// Creates an instance of the custom lint plugin.
-PluginBase createPlugin() => _MyCustomLints();
-
-class _MyCustomLints extends PluginBase {
-  /// Returns the list of lint rules applied by this plugin.
+/// The analyzer plugin: registers every rule, enabled by default.
+///
+/// A consumer disables a rule under `plugins: dart_architecture_lints:
+/// diagnostics:` in its `analysis_options.yaml`.
+class DartArchitectureLintsPlugin extends Plugin {
   @override
-  List<LintRule> getLintRules(CustomLintConfigs configs) => [
-    const NoBangOperatorLint(),
-    const NoLateKeywordLint(),
-    const EnforceFinalVariablesLint(),
-    const VariableNameShouldMatchClassName(),
-    const MethodOrderRule(),
-    const AvoidHardcodedStrings(),
-    NoDateTimeNowLint.fromConfigs(configs),
-    const ViewModelsCallSuperDisposeLint(),
-    const OneClassPerFileLint(),
-    const UseCasesFollowPatternLint(),
-    const ViewModelsNoBuildContextLint(),
-    const RequireKeysInListsLint(),
-    const NoExternalDependenciesInDomainLint(),
-    EnforceUtcDatesLint.fromConfigs(configs),
-    const NoDirectInternetCallsLint(),
-    NoDeviceLocalInPresentationLint.fromConfigs(configs),
-    NoCivilUtcMixWithoutHelperLint.fromConfigs(configs),
-    // New critical rules (error level)
-    const NoStaticMapControllersLint(),
-    const MixinNoStateOwnershipLint(),
-    const ViewModelsNoFlutterTypesLint(),
-    const NoResultThrowLint(),
-    // New high-priority rules (warning level)
-    const UiStateMustCallSuperDisposeLint(),
-    const MultiProviderOrderLint(),
-    // Phase 1A: Domain/Data layer foundation rules
-    // Opt-in Freezed convention and generator-independent shallow check
-    const DomainEntitiesMustUseFreezed(),
-    const DomainValuesShallowImmutable(),
-    const NoSerializationInEntities(),
-    const ModelsMustHaveJsonSerialization(),
-    // Phase 1B: Obligatory patterns
-    const UseCasesExtendBaseUseCase(),
-    // Phase 2: Contracts and lifecycle
-    const ViewModelsExtendBaseViewModel(),
-    const RepositoryMethodsReturnResult(),
-    const StreamControllerMustClose(),
-    RequireExplicitTypes.fromConfigs(configs),
-    // Phase 3: Completeness
-    const DataSourcesReturnResult(),
-    const NoBusinessLogicInWidgets(),
-    // Unawaited governance
-    const AvoidUnawaitedLint(),
-    const AvoidUnawaitedIgnoreWithoutReasonLint(),
-    const AvoidAsyncInProviderCreateLint(),
-    const AvoidAsyncWrapperHidesUnawaitedLint(),
-    // Logging governance
-    const NoDirectErrorLoggingInDataDomainLint(),
-    const LoggerContextMustBeStructuredLint(),
-    LoggerContextMatchesScopeLint.fromConfigs(configs),
-    const NoSensitiveDataInLogMetadataLint(),
-    // Exception message governance (i18n safety)
-    const NoRawExceptionMessageToUser(),
-    const NoExceptionMessagePassthrough(),
-    const AppExceptionMustDefineCode(),
-    const AvoidScattered401HandlingLint(),
-    // Screen base contract enforcement
-    const TopLevelScreensMustUseBaseContract(),
-    NoDomainEntitiesInPresentationUiLint.fromConfigs(configs),
-    // Timezone display safety
-    NoUtcTimeFormatWithoutEmpresaHelperLint.fromConfigs(configs),
-    // Presentation color tokens
-    NoHardcodedColorLiteralLint.fromConfigs(configs),
-    // Presentation spacing tokens
-    NoHardcodedBorderRadiusLint.fromConfigs(configs),
-    // Overlay lifecycle/context safety
-    const OverlayLifecycleContextSafetyLint(),
-  ];
+  String get name => 'dart_architecture_lints';
+
+  @override
+  void register(PluginRegistry registry) {
+    for (final rule in createRules()) {
+      registry.registerWarningRule(rule);
+    }
+  }
 }
+
+/// New instances of every registered rule, in registration order.
+///
+/// Rule options are fixed: each rule runs with its built-in defaults.
+List<GeneratedSkippingDartLintRule> createRules() => [
+  NoBangOperatorLint(),
+  NoLateKeywordLint(),
+  EnforceFinalVariablesLint(),
+  VariableNameShouldMatchClassName(),
+  MethodOrderRule(),
+  AvoidHardcodedStrings(),
+  NoDateTimeNowLint(),
+  ViewModelsCallSuperDisposeLint(),
+  OneClassPerFileLint(),
+  UseCasesFollowPatternLint(),
+  ViewModelsNoBuildContextLint(),
+  RequireKeysInListsLint(),
+  NoExternalDependenciesInDomainLint(),
+  EnforceUtcDatesLint(),
+  NoDirectInternetCallsLint(),
+  NoDeviceLocalInPresentationLint(),
+  NoCivilUtcMixWithoutHelperLint(),
+  // New critical rules (error level)
+  NoStaticMapControllersLint(),
+  MixinNoStateOwnershipLint(),
+  ViewModelsNoFlutterTypesLint(),
+  NoResultThrowLint(),
+  // New high-priority rules (warning level)
+  UiStateMustCallSuperDisposeLint(),
+  MultiProviderOrderLint(),
+  // Phase 1A: Domain/Data layer foundation rules
+  // Opt-in Freezed convention and generator-independent shallow check
+  DomainEntitiesMustUseFreezed(),
+  DomainValuesShallowImmutable(),
+  NoSerializationInEntities(),
+  ModelsMustHaveJsonSerialization(),
+  // Phase 1B: Obligatory patterns
+  UseCasesExtendBaseUseCase(),
+  // Phase 2: Contracts and lifecycle
+  ViewModelsExtendBaseViewModel(),
+  RepositoryMethodsReturnResult(),
+  StreamControllerMustClose(),
+  RequireExplicitTypes(),
+  // Phase 3: Completeness
+  DataSourcesReturnResult(),
+  NoBusinessLogicInWidgets(),
+  // Unawaited governance
+  AvoidUnawaitedLint(),
+  AvoidUnawaitedIgnoreWithoutReasonLint(),
+  AvoidAsyncInProviderCreateLint(),
+  AvoidAsyncWrapperHidesUnawaitedLint(),
+  // Logging governance
+  NoDirectErrorLoggingInDataDomainLint(),
+  LoggerContextMustBeStructuredLint(),
+  LoggerContextMatchesScopeLint(),
+  NoSensitiveDataInLogMetadataLint(),
+  // Exception message governance (i18n safety)
+  NoRawExceptionMessageToUser(),
+  NoExceptionMessagePassthrough(),
+  AppExceptionMustDefineCode(),
+  AvoidScattered401HandlingLint(),
+  // Screen base contract enforcement
+  TopLevelScreensMustUseBaseContract(),
+  NoDomainEntitiesInPresentationUiLint(),
+  // Timezone display safety
+  NoUtcTimeFormatWithoutEmpresaHelperLint(),
+  // Presentation color tokens
+  NoHardcodedColorLiteralLint(),
+  // Presentation spacing tokens
+  NoHardcodedBorderRadiusLint(),
+  // Overlay lifecycle/context safety
+  OverlayLifecycleContextSafetyLint(),
+];

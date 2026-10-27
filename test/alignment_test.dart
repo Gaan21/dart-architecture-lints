@@ -1,6 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:analyzer/error/error.dart';
+import 'package:analyzer/diagnostic/diagnostic.dart';
 import 'package:dart_architecture_lints/enforce_final_variables.dart';
 import 'package:dart_architecture_lints/avoid_unawaited.dart';
 import 'package:dart_architecture_lints/logger_context_must_be_structured.dart';
@@ -19,13 +19,14 @@ import 'package:dart_architecture_lints/streamcontroller_must_close.dart';
 import 'package:dart_architecture_lints/time_scope.dart';
 import 'package:dart_architecture_lints/variable_name_should_match_class_name.dart';
 import 'package:test/test.dart';
+
 import 'rule_test_support.dart';
 
 void main() {
   test(
     'final: reassignment, compound writes, closures and shadowing resolve',
     () async {
-      final errors = await runRule(const EnforceFinalVariablesLint(), '''
+      final errors = await runRule(EnforceFinalVariablesLint(), '''
 void run() {
   var count = 0;
   count++;
@@ -49,21 +50,15 @@ import 'dart:async';
 class Cache { static final timers = <String, Timer>{}; }
 mixin Scheduling { final timer = Timer(Duration.zero, () {}); }
 ''';
-    expect(
-      await runRule(const NoStaticMapControllersLint(), source),
-      hasLength(1),
-    );
-    expect(
-      await runRule(const MixinNoStateOwnershipLint(), source),
-      hasLength(1),
-    );
+    expect(await runRule(NoStaticMapControllersLint(), source), hasLength(1));
+    expect(await runRule(MixinNoStateOwnershipLint(), source), hasLength(1));
   });
 
   test(
     'legacy async justification and no-throw contracts remain effective',
     () async {
       expect(
-        await runRule(const AvoidUnawaitedLint(), '''
+        await runRule(AvoidUnawaitedLint(), '''
 import 'dart:async';
 Future<void> cleanup() async {}
 void run() {
@@ -75,7 +70,7 @@ void run() {
         hasLength(1),
       );
       expect(
-        await runRule(const NoResultThrowLint(), '''
+        await runRule(NoResultThrowLint(), '''
 class RecordRepository {
   int fetch() { throw StateError('unavailable'); }
   int cached() => 1;
@@ -99,11 +94,11 @@ void run() {
 }
 ''';
       expect(
-        await runRule(const LoggerContextMustBeStructuredLint(), source),
+        await runRule(LoggerContextMustBeStructuredLint(), source),
         hasLength(1),
       );
       expect(
-        await runRule(const NoSensitiveDataInLogMetadataLint(), source),
+        await runRule(NoSensitiveDataInLogMetadataLint(), source),
         hasLength(1),
       );
     },
@@ -114,8 +109,8 @@ void run() {
 import 'dart:async';
 class ChangeNotifier { void dispose() {} }
 ''';
-    Future<List<AnalysisError>> check(String body) =>
-        runRule(const StreamControllerMustClose(), '$prelude\n$body');
+    Future<List<Diagnostic>> check(String body) =>
+        runRule(StreamControllerMustClose(), '$prelude\n$body');
 
     test('each variable must close, including inferred fields', () async {
       expect(
@@ -217,7 +212,7 @@ class Owner extends ChangeNotifier {
     });
     test('same-named non-SDK controller is not a stream resource', () async {
       expect(
-        await runRule(const StreamControllerMustClose(), '''
+        await runRule(StreamControllerMustClose(), '''
 class StreamController<T> {}
 class ChangeNotifier { void dispose() {} }
 class Owner extends ChangeNotifier { final controller = StreamController<int>(); }
@@ -260,9 +255,9 @@ class Sample {
   int measure(int input) { final result = input + _count; return result; }
 }
 ''';
-      expect(await runRule(const RequireExplicitTypes(), source), hasLength(3));
+      expect(await runRule(RequireExplicitTypes(), source), hasLength(3));
       expect(
-        await runRule(const RequireExplicitTypes(policy: 'selective'), source),
+        await runRule(RequireExplicitTypes(policy: 'selective'), source),
         hasLength(1),
       );
     },
@@ -272,10 +267,7 @@ class Sample {
     () async {
       expect(
         await runRule(
-          const RequireExplicitTypes(
-            policy: 'selective',
-            localNames: ['boundary'],
-          ),
+          RequireExplicitTypes(policy: 'selective', localNames: ['boundary']),
           '''
 dynamic read() => 1;
 class Sample {
@@ -297,7 +289,7 @@ class Sample {
     'UTC parse accepts explicit Z/offset, epoch getters are zone-independent',
     () async {
       expect(
-        await runRule(const EnforceUtcDatesLint(), '''
+        await runRule(EnforceUtcDatesLint(), '''
 int epoch(DateTime value) => value.millisecondsSinceEpoch;
 DateTime zulu() => DateTime.parse('2026-01-01T10:00:00Z');
 DateTime offset() => DateTime.parse('2026-01-01T10:00:00+02:00');
@@ -316,12 +308,10 @@ DateTime now() => DateTime.now();
 DateTime civil() => DateTime(2026, 1, 1);
 DateTime current() => DateTime.now();
 ''';
-      expect(await runRule(const NoDateTimeNowLint(), source), hasLength(2));
+      expect(await runRule(NoDateTimeNowLint(), source), hasLength(2));
       expect(
         await runRule(
-          const NoDateTimeNowLint(
-            scope: TimeScope(civilGlobs: ['**/calendar.dart']),
-          ),
+          NoDateTimeNowLint(scope: TimeScope(civilGlobs: ['**/calendar.dart'])),
           source,
           path: 'lib/calendar.dart',
         ),
@@ -329,9 +319,7 @@ DateTime current() => DateTime.now();
       );
       expect(
         await runRule(
-          const NoDateTimeNowLint(
-            scope: TimeScope(clockGlobs: ['**/clock.dart']),
-          ),
+          NoDateTimeNowLint(scope: TimeScope(clockGlobs: ['**/clock.dart'])),
           source,
           path: 'lib/clock.dart',
         ),
@@ -339,7 +327,7 @@ DateTime current() => DateTime.now();
       );
       expect(
         await runRule(
-          const EnforceUtcDatesLint(
+          EnforceUtcDatesLint(
             scope: TimeScope(civilGlobs: ['**/calendar.dart']),
           ),
           source,
@@ -358,10 +346,10 @@ core.DateTime current() => core.DateTime.now();
 core.DateTime local() => core.DateTime(2026);
 core.DateTime offset() => core.DateTime.parse('2026-01-01T10:00:00+02:00');
 ''';
-      expect(await runRule(const NoDateTimeNowLint(), source), hasLength(2));
+      expect(await runRule(NoDateTimeNowLint(), source), hasLength(2));
       expect(
         await runRule(
-          const EnforceUtcDatesLint(),
+          EnforceUtcDatesLint(),
           source,
           path: 'lib/data/dates.dart',
         ),
@@ -376,13 +364,10 @@ class Sample {
   void run() { Logger.warn(scope: 'Sample.wrong'); }
 }
 ''';
-    expect(
-      await runRule(const LoggerContextMatchesScopeLint(), source),
-      isEmpty,
-    );
+    expect(await runRule(LoggerContextMatchesScopeLint(), source), isEmpty);
     expect(
       await runRule(
-        const LoggerContextMatchesScopeLint(
+        LoggerContextMatchesScopeLint(
           includeGlobs: ['**/lib/**'],
           loggerNames: ['Logger'],
           methods: ['warn'],
@@ -407,7 +392,7 @@ class MultiProvider { MultiProvider({required List<Object> providers}); }
         ('Provider<PanelUiState>(), Provider<PanelViewModel>()', 0),
       ]) {
         expect(
-          await runRule(const MultiProviderOrderLint(), '''
+          await runRule(MultiProviderOrderLint(), '''
 $prelude
 void compose() { MultiProvider(providers: [$entries]); }
 '''),
@@ -430,21 +415,21 @@ void build() {
   ListView.builder(itemBuilder: (context, index) => Tile(key: ValueKey(ids[index])));
 }
 ''';
-    final rule = const RequireKeysInListsLint();
+    final rule = RequireKeysInListsLint();
     expect(await runRule(rule, source), hasLength(1));
     expect(rule.code.correctionMessage, contains('stable ValueKey'));
     expect(rule.code.problemMessage, contains('do not prevent rebuilds'));
   });
   test('selected naming and getter-first method order remain strict', () async {
     expect(
-      await runRule(const VariableNameShouldMatchClassName(), '''
+      await runRule(VariableNameShouldMatchClassName(), '''
 class RecordModel {}
 void run() { final RecordModel value = RecordModel(); print(value); }
 '''),
       hasLength(1),
     );
     expect(
-      await runRule(const MethodOrderRule(), '''
+      await runRule(MethodOrderRule(), '''
 class Sample { void run() {} int get count => 0; }
 '''),
       hasLength(1),
@@ -457,9 +442,9 @@ class RecordModel {
 }
 ''';
     for (final rule in [
-      const MethodOrderRule(),
-      const VariableNameShouldMatchClassName(),
-      const RequireExplicitTypes(policy: 'selective'),
+      MethodOrderRule(),
+      VariableNameShouldMatchClassName(),
+      RequireExplicitTypes(policy: 'selective'),
     ]) {
       expect(await runRule(rule, accepted), isEmpty);
     }

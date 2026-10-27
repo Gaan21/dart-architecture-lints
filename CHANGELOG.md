@@ -1,9 +1,35 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — analyzer plugin (unreleased)
 
 No version tag or release. Review rule and option changes before updating a
 consumer; updating never edits a consumer's configuration.
+
+- **Breaking: analyzer plugin instead of custom_lint.** The package is an
+  `analysis_server_plugin` 0.3.25 plugin on `analyzer` 14.6.0 (`lib/main.dart`)
+  and needs Dart 3.13. `custom_lint` and `custom_lint_builder` are gone.
+  Consumers configure it under the top-level `plugins:` key of
+  `analysis_options.yaml` and run `dart analyze`; see the migration steps in
+  `docs/configuration.md`.
+- **Breaking: configuration syntax.** `diagnostics: {rule_id: false}` disables a
+  rule; `info`/`warning`/`error` values set its severity. `custom_lint: rules:`
+  and `analyzer: errors:` entries for these rules are no longer read.
+- **Breaking: ignore comments need the plugin prefix:**
+  `// ignore: dart_architecture_lints/<rule_id>`. `avoid_unawaited_ignore_without_reason`
+  now also checks prefixed suppressions of the unawaited rules.
+- **Breaking: rule options removed.** The plugin API has no per-rule options.
+  The 10 rules that read options (`require_explicit_types`, `enforce_utc_dates`,
+  `no_local_datetime_constructors`, `logger_context_matches_scope`,
+  `no_domain_entities_in_presentation_ui`, `no_device_local_in_presentation`,
+  `no_civil_utc_mix_without_helper`, `no_utc_time_format_without_empresa_helper`,
+  `no_hardcoded_color_literal`, `no_hardcoded_border_radius`) run with the
+  defaults they used when no option was set, documented per rule.
+- **Unchanged:** all 52 rule IDs, messages, info severity, enabled-by-default
+  contract, generated-file skipping and path scoping. A differential run of the
+  custom_lint and plugin implementations over the test, documentation and
+  example fixtures (3,576 files) reported identical diagnostics.
+- **Tests** run on the analyzer's lint pipeline with the real SDK, and every rule
+  has a positive and a negative fixture (`test/rule_cases.dart`).
 
 - **Profiles and legacy pairing removed.** `profiles/` (architecture, legacy,
   style samples), `analysis_options.yaml.template`, the generator's profile

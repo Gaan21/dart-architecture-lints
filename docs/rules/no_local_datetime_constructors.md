@@ -32,10 +32,10 @@ Your project accepts device-local time and does not inject a clock.
 
 ## Options
 
-Sibling keys: `include_globs` (default `["**"]`), `exclude_globs`, `civil_date_globs` (allows the unnamed `DateTime(year, ...)` constructor) and `clock_globs` (allows `DateTime.now()` in clock adapters).
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): include glob `**`, no exclude globs, and no civil-date or clock exception globs.
 
 ## Limits
 
 - Implemented in `lib/no_datetime_now.dart`; the diagnostic ID differs from the file name.
 - Construction sites only; values from other APIs are not tracked.
-- Scope exceptions are file-level ownership decisions, not proof of correct calendar modeling.
+- There are no civil-date or clock-adapter exceptions; suppress those lines or disable the rule.

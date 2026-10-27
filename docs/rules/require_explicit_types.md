@@ -8,7 +8,7 @@
 
 ## What it detects
 
-Default `policy: strict`: every field declaration, local variable declaration and `for`/`for-in` loop variable (statements and collection elements) without a type annotation. `policy: selective`: public fields and top-level variables, public method/getter and top-level function return types (setters excluded), simple parameters of public methods, constructors and top-level functions; locals only when inferred as `dynamic` or matching `local_names`. Private classes and private declarations are excluded in selective mode.
+Every field declaration, local variable declaration and `for`/`for-in` loop variable (statements and collection elements) without a type annotation (the `strict` policy).
 
 ## Why
 
@@ -32,14 +32,12 @@ class Cart {
 
 ## Disable if
 
-Your style relies on inference (for example the upstream `omit_local_variable_types`), or use `policy: selective` to keep only boundary annotations.
+Your style relies on inference (for example the upstream `omit_local_variable_types`).
 
 ## Options
 
-Sibling keys: `policy` (`strict` default, or `selective`; other values throw) and `local_names` (wildcard patterns of local names that need annotations in selective mode). Example: `- require_explicit_types: true` then `  policy: selective` on the next line.
+Fixed since 0.1.0 (the analyzer plugin API has no rule options): the `strict` policy, without extra local-name patterns. The former `selective` policy is not available.
 
 ## Limits
 
-- Strict mode adds no signature checks; selective mode does not check loop variables.
-- Initializing and super formals (`this.x`, `super.x`) are not simple parameters and inherit their types.
-- Anonymous callbacks and local functions are not public API; extension and mixin members are judged by name only.
+- No signature checks: return types and parameters are not required.

@@ -1,24 +1,19 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
+
 import 'generated_skipping_dart_lint_rule.dart';
 import 'time_scope.dart';
 import 'timezone_safety_utils.dart';
 
 /// Requires UTC representations of instants at data-layer construction sites.
 class EnforceUtcDatesLint extends GeneratedSkippingDartLintRule {
-  const EnforceUtcDatesLint({this.scope = const TimeScope()})
-    : super(code: _code);
+  EnforceUtcDatesLint({this.scope = const TimeScope()}) : super(code: _code);
   final TimeScope scope;
 
-  static EnforceUtcDatesLint fromConfigs(CustomLintConfigs configs) =>
-      EnforceUtcDatesLint(
-        scope: TimeScope.fromJson(readRuleOptions(configs, _code.name)),
-      );
-
   static const _code = LintCode(
-    name: 'enforce_utc_dates',
-    problemMessage: 'Represent data-layer instants in UTC.',
+    'enforce_utc_dates',
+    'Represent data-layer instants in UTC.',
     correctionMessage:
         'Use UTC construction or convert this instant with toUtc(). '
         'Model civil calendar values separately in explicitly scoped files.',
@@ -26,9 +21,9 @@ class EnforceUtcDatesLint extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     if (!scope.includes(resolver.path)) return;
     const layers = {
@@ -57,11 +52,11 @@ class EnforceUtcDatesLint extends GeneratedSkippingDartLintRule {
       if (name == 'now' && scope.clock(resolver.path)) return;
       if ((name == 'fromMillisecondsSinceEpoch' ||
               name == 'fromMicrosecondsSinceEpoch') &&
-          node.argumentList.arguments.whereType<NamedExpression>().any(
+          node.argumentList.arguments.whereType<NamedArgument>().any(
             (argument) =>
-                argument.name.label.name == 'isUtc' &&
-                argument.expression is BooleanLiteral &&
-                (argument.expression as BooleanLiteral).value,
+                argument.name.lexeme == 'isUtc' &&
+                argument.argumentExpression is BooleanLiteral &&
+                (argument.argumentExpression as BooleanLiteral).value,
           )) {
         return;
       }

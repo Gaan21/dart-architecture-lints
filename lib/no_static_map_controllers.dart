@@ -1,8 +1,10 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/type.dart';
+
 import 'resource_types.dart';
+
 import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 
 /// A lint rule that prohibits static Map fields containing Flutter controllers
@@ -13,13 +15,12 @@ import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
 /// to their owning widgets or state classes.
 class NoStaticMapControllersLint extends GeneratedSkippingDartLintRule {
   /// Creates an instance of [NoStaticMapControllersLint].
-  const NoStaticMapControllersLint() : super(code: _code);
+  NoStaticMapControllersLint() : super(code: _code);
 
   /// The lint code associated with this rule.
   static const _code = LintCode(
-    name: 'no_static_map_controllers',
-    problemMessage:
-        'Map estático con controllers/resources con lifecycle (TextEditingController, Timer, FocusNode, etc.) causa memory leaks y problemas de lifecycle.',
+    'no_static_map_controllers',
+    'Map estático con controllers/resources con lifecycle (TextEditingController, Timer, FocusNode, etc.) causa memory leaks y problemas de lifecycle.',
     correctionMessage:
         'Mueve controllers a ChangeNotifier (UiState) con Provider scoped.\n'
         'Ejemplo:\n'
@@ -35,9 +36,9 @@ class NoStaticMapControllersLint extends GeneratedSkippingDartLintRule {
 
   @override
   void runOnNonGenerated(
-    CustomLintResolver resolver,
+    LintFile resolver,
     DiagnosticReporter reporter,
-    CustomLintContext context,
+    LintRunContext context,
   ) {
     context.registry.addFieldDeclaration((FieldDeclaration node) {
       // Check if field is static
