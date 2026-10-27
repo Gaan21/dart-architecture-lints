@@ -101,8 +101,6 @@ and [Result pattern](https://docs.flutter.dev/app-architecture/design-patterns/r
 
 ## Pending after the 0.1.0 plugin port
 
-- Verify the `git: url/ref` plugin source end to end from a consumer (only the
-  `path:` source was exercised before publishing).
 - `avoid_unawaited_ignore_without_reason`: its correction message still shows the
   bare `// ignore: avoid_unawaited` example; update it to the prefixed form.
 - Rule constructors keep option parameters used only by tests; remove them if
