@@ -5,6 +5,9 @@
 No version tag or release. Review rule and option changes before updating a
 consumer; updating never edits a consumer's configuration.
 
+- Opt-in package-local `avoid_unawaited` permission manifest with exact call
+  matching and checkout verification. Existing consumers retain legacy behavior.
+
 - **Breaking: analyzer plugin instead of custom_lint.** The package is an
   `analysis_server_plugin` 0.3.25 plugin on `analyzer` 14.6.0 (`lib/main.dart`)
   and needs Dart 3.13. `custom_lint` and `custom_lint_builder` are gone.

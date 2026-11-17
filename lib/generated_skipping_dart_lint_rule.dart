@@ -22,10 +22,11 @@ class LintFile {
 
 /// What a rule may use while registering callbacks for one file.
 class LintRunContext {
-  LintRunContext(this.registry, this._packageName);
+  LintRunContext(this.registry, this._packageName, this.file);
 
   final RuleNodeRegistry registry;
   final String Function() _packageName;
+  final File file;
 
   /// The `name` in the nearest `pubspec.yaml` above the file, or `''`.
   late final String packageName = _packageName();
@@ -79,7 +80,7 @@ class _UnitVisitor extends SimpleAstVisitor<void> {
     rule.runOnNonGenerated(
       file,
       unit.diagnosticReporter,
-      LintRunContext(registry, () => _packageName(unit.file)),
+      LintRunContext(registry, () => _packageName(unit.file), unit.file),
     );
     registry.run(node);
   }

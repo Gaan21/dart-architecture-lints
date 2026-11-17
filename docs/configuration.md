@@ -33,7 +33,8 @@ plugins:
   `- no_bang_operator`). Every rule reports **info** by default; `dart analyze`
   exits non-zero for infos only with `--fatal-infos`, and for `warning`/`error`
   overrides by default.
-- Plugins cannot be configured per rule. Rule options do not exist (see below).
+- The plugin API does not accept arbitrary rule options. See the package-local
+  [unawaited permissions opt-in](unawaited-permissions.md).
 
 ## Suppressing a diagnostic
 

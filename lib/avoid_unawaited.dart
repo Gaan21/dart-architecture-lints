@@ -3,6 +3,7 @@ import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:dart_architecture_lints/generated_skipping_dart_lint_rule.dart';
+import 'package:dart_architecture_lints/unawaited_permissions.dart';
 
 /// Lint rule that detects `unawaited(...)` calls without a structured justification
 /// comment in the format `// unawaited-ok: <category> - <reason>`.
@@ -58,12 +59,67 @@ class AvoidUnawaitedLint extends GeneratedSkippingDartLintRule {
         'El método llamado debe ser NO-THROW (try/catch + logging central).',
   );
 
+  static const _codePermission = LintCode(
+    'avoid_unawaited',
+    'Unawaited permission policy: {0}',
+    correctionMessage:
+        'Await and check the result, or request review of this exact call. '
+        'Inline comments do not grant permission in manifest mode.',
+  );
+
   @override
   void runOnNonGenerated(
     LintFile resolver,
     DiagnosticReporter reporter,
     LintRunContext context,
   ) {
+    final UnawaitedPermissions? permissions;
+    try {
+      permissions = UnawaitedPermissions.forFile(context.file);
+    } on FormatException catch (error) {
+      context.registry.addCompilationUnit((unit) {
+        reporter.atToken(
+          unit.beginToken,
+          _codePermission,
+          arguments: [error.message],
+        );
+      });
+      return;
+    }
+    if (permissions != null) {
+      final path = permissions.relativePath(context.file);
+      final selectors = permissions.selectors;
+      context.registry.addCompilationUnit((unit) {
+        final calls = unawaitedCalls(path, unit);
+        for (final entry in calls.entries) {
+          final approved = selectors.contains(entry.key);
+          if (approved && entry.value.length == 1) continue;
+          for (final node in entry.value) {
+            reporter.atNode(
+              node,
+              _codePermission,
+              arguments: [
+                approved
+                    ? 'ambiguous permission (multiple matches).'
+                    : 'no permission for this call.',
+              ],
+            );
+          }
+        }
+        for (final selector in selectors) {
+          if (selector.path == path && !calls.containsKey(selector)) {
+            reporter.atToken(
+              unit.beginToken,
+              _codePermission,
+              arguments: [
+                'stale permission for ${selector.scope} (${selector.fingerprint}).',
+              ],
+            );
+          }
+        }
+      });
+      return;
+    }
     context.registry.addMethodInvocation((MethodInvocation node) {
       _checkMethodInvocation(node, reporter);
     });

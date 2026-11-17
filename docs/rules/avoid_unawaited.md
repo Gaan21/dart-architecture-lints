@@ -8,6 +8,10 @@
 
 **WorkTracker-specific**: fixed WorkTracker `// unawaited-ok: <category> - <reason>` comment format and categories. Disable outside WorkTracker.
 
+The legacy default above is unchanged. Any package can explicitly select
+[manifest mode](../unawaited-permissions.md), where inline markers never grant
+permission. The examples below demonstrate legacy mode only.
+
 ## What it detects
 
 Calls to `unawaited` (resolved to `dart:async` when resolvable) without a comment on the same or the preceding line of the form `// unawaited-ok: <category> - <reason>`. Valid categories: `dispose-sync`, `callback-sync`, `telemetry/logging`, `best-effort-cleanup`, `post-frame-init`, `prefetch-noncritical`. A malformed `unawaited-ok` comment produces a distinct message under the same ID.
@@ -35,7 +39,7 @@ In any project outside WorkTracker that does not adopt the same convention. Your
 
 ## Options
 
-None. Categories are fixed.
+Legacy categories are fixed. See manifest mode for package-local configuration.
 
 ## Limits
 
